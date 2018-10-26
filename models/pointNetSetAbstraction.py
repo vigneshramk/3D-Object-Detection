@@ -9,17 +9,17 @@ class Model(nn.Module):
         
         self.cnn1 = nn.Sequential(
                                 nn.Conv2d(num_channels[0], num_channels[1], kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=True), #32 bit floats in original code. padding was VALID
-                                nn.BatchNorm2d(num_channels[1], eps=bn_decay, momentum=0.1), #No momentum in original code. eps was None
+                                nn.BatchNorm2d(num_channels[1], momentum=1-bn_decay), #No momentum in original code. eps was None
                                 self.Activation()
                                 )
         self.cnn2 = nn.Sequential(
                                 nn.Conv2d(num_channels[1], num_channels[2], kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=True), #32 bit floats in original code. padding was VALID
-                                nn.BatchNorm2d(num_channels[2], eps=bn_decay, momentum=0.1), #No momentum in original code. eps was None
+                                nn.BatchNorm2d(num_channels[2], momentum=1-bn_decay), #No momentum in original code. eps was None
                                 self.Activation()
                                 )
         self.cnn3 = nn.Sequential(
                                 nn.Conv2d(num_channels[2], num_channels[3], kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=True), #32 bit floats in original code. padding was VALID
-                                nn.BatchNorm2d(num_channels[3], eps=bn_decay, momentum=0.1), #No momentum in original code. eps was None
+                                nn.BatchNorm2d(num_channels[3], momentum=1-bn_decay), #No momentum in original code. eps was None
                                 self.Activation()
                                 )
         self.layers = [self.cnn1, self.cnn2, self.cnn3]

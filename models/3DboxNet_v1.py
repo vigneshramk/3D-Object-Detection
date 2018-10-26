@@ -12,33 +12,33 @@ class Model(nn.Module):
         self.Activation = activation
         self.cnn1 = nn.Sequential(
                                 nn.Conv2d(num_in_channels, 128, kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=True), #32 bit floats in original code. padding was VALID
-                                nn.BatchNorm2d(128, eps=bn_decay, momentum=0.1), #No momentum in original code. eps was None
+                                nn.BatchNorm2d(128, momentum=1-bn_decay), #No momentum in original code. eps was None
                                 self.Activation()
                                 )
         self.cnn2 = nn.Sequential(
                                 nn.Conv2d(128, 128, (1,1), (1,1), (0,0), bias=True), #32 bit floats in original code. padding was VALID
-                                nn.BatchNorm2d(128, eps=bn_decay, momentum=0.1), #No momentum in original code.
+                                nn.BatchNorm2d(128, momentum=1-bn_decay), #No momentum in original code.
                                 self.Activation()
                                 )
         self.cnn3 = nn.Sequential(
                                 nn.Conv2d(128, 256, (1,1), (1,1), (0,0), bias=True), #32 bit floats in original code. padding was VALID
-                                nn.BatchNorm2d(256, eps=bn_decay, momentum=0.1), #No momentum in original code.
+                                nn.BatchNorm2d(256, momentum=1-bn_decay), #No momentum in original code.
                                 self.Activation()
                                 )
         self.cnn4 = nn.Sequential(
                                 nn.Conv2d(256, 512, (1,1), (1,1), (0,0), bias=True), #32 bit floats in original code. padding was VALID
-                                nn.BatchNorm2d(512, eps=bn_decay, momentum=0.1), #No momentum in original code.
+                                nn.BatchNorm2d(512, momentum=1-bn_decay), #No momentum in original code.
                                 self.Activation()
                                 )
         self.pool = nn.MaxPool2d(kernel_size=(self.num_point,1), stride=(2,2), padding=0) #padding was VALID
         self.fc1  = nn.Sequential(
                                 nn.Linear(num_input_to_fc, 512, bias=True),
-                                nn.BatchNorm1d(512, eps=bn_decay, momentum=0.1),
+                                nn.BatchNorm1d(512, momentum=1-bn_decay),
                                 self.Activation()
                                 )
         self.fc2  = nn.Sequential(
                                 nn.Linear(512, 256, bias=True),
-                                nn.BatchNorm1d(256, eps=bn_decay, momentum=0.1),
+                                nn.BatchNorm1d(256, momentum=1-bn_decay),
                                 self.Activation()
                                 )
     # The first 3 numbers: box center coordinates (cx,cy,cz),

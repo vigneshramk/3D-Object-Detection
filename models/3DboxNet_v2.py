@@ -12,12 +12,12 @@ class Model(nn.Module):
         self.set3 = pointNetSetAbstraction.Model(num_channels=[256,256,256,512])
         self.fc1  = nn.Sequential(
                                 nn.Linear(num_input_to_fc, 512, bias=True),
-                                nn.BatchNorm1d(512, eps=bn_decay, momentum=0.1),
+                                nn.BatchNorm1d(512, momentum=1-bn_decay),
                                 self.Activation()
                                 )
         self.fc2  = nn.Sequential(
                                 nn.Linear(512, 256, bias=True),
-                                nn.BatchNorm1d(256, eps=bn_decay, momentum=0.1),
+                                nn.BatchNorm1d(256, momentum=1-bn_decay),
                                 self.Activation()
                                 )
     # The first 3 numbers: box center coordinates (cx,cy,cz),
