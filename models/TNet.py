@@ -5,8 +5,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as fn
-import torch.optim as optim
 
 class TNet(nn.Module):
   def __init__(self, ch):
@@ -21,7 +19,7 @@ class TNet(nn.Module):
     bc2 = nn.BatchNorm2d(128)
     bc3 = nn.BatchNorm2d(256)
 
-    l1 = nn.Linear(, 256)
+    l1 = nn.Linear(, 256)         # TODO: Add Input dimension
     l2 = nn.Linear(256, 128)
     l3 = nn.Linear(128, 3)
 
@@ -56,6 +54,7 @@ class TNet(nn.Module):
 
 
   def forward(self, x, ob_type=None):
+    # TODO: Input dimension for TNet is required
     x = self.conv(x)
     x = x.view(x.size(0), -1)
     if ob_type is not None:
