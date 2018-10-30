@@ -6,7 +6,7 @@ import utils_sun
 
 type2class = {}
 
-root_dir = '/home/kvr/Documents/Projects/3D-Object-Detection/2d_data'
+root_dir = '/home/vignesh/Projects/3D-Object-Detection/2d_data'
 image_dir = os.path.join(root_dir, 'image')
 label_dir = os.path.join(root_dir, 'label_dimension')
 
