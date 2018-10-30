@@ -2,9 +2,7 @@ import csv
 import os
 import utils_sun
 
-# type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
-
-type2class = {}
+type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
 
 root_dir = '/home/vignesh/Projects/3D-Object-Detection/2d_data'
 image_dir = os.path.join(root_dir, 'image')
@@ -27,12 +25,9 @@ with open('sun_csv/annotate.csv', 'w') as csvfile:
                 obj = o.__dict__
                 cl = obj['classname']
                 if cl not in type2class:
-                    type2class[cl] = idx
-                    idx +=1
+                    continue
                 x1,y1,x2,y2 = map(int,obj['box2d'])
-                
                 if x2 <= x1 or y2 <= y1:
-                    print('Problem')
                     continue
                 writer.writerow([img_path,x1,y1,x2,y2,cl])
 
