@@ -7,60 +7,60 @@ import torch
 import torch.nn as nn
 
 class TNet(nn.Module):
-  def __init__(self, ch):
-    super(TNet, self).__init__()
-    c1 = nn.Conv2d(ch, 128, (1, 1), stride=1, padding=0)
-    c2 = nn.Conv2d(128, 128, (1, 1), stride=1, padding=0)
-    c3 = nn.Conv2d(128, 256, (1, 1), stride=1, padding=0)
-    rl = nn.ReLU(inplace=True)
-    mp = nn.MaxPool2d((ch, 1))
+    def __init__(self, ch):
+        super(TNet, self).__init__()
+        c1 = nn.Conv2d(ch, 128, (1, 1), stride=1, padding=0)
+        c2 = nn.Conv2d(128, 128, (1, 1), stride=1, padding=0)
+        c3 = nn.Conv2d(128, 256, (1, 1), stride=1, padding=0)
+        rl = nn.ReLU(inplace=True)
+        mp = nn.MaxPool2d((ch, 1))
 
-    bc1 = nn.BatchNorm2d(128)
-    bc2 = nn.BatchNorm2d(128)
-    bc3 = nn.BatchNorm2d(256)
+        bc1 = nn.BatchNorm2d(128)
+        bc2 = nn.BatchNorm2d(128)
+        bc3 = nn.BatchNorm2d(256)
 
-    l1 = nn.Linear(, 256)         # TODO: Add Input dimension
-    l2 = nn.Linear(256, 128)
-    l3 = nn.Linear(128, 3)
+        l1 = nn.Linear(, 256)                 # TODO: Add Input dimension
+        l2 = nn.Linear(256, 128)
+        l3 = nn.Linear(128, 3)
 
-    bl1 = nn.BatchNorm1d(256)
-    bl2 = nn.BatchNorm1d(128)
+        bl1 = nn.BatchNorm1d(256)
+        bl2 = nn.BatchNorm1d(128)
 
-    self.conv = nn.sequential(c1, bc1, rl, c2, bc2, rl,
-                              c3, bc3, rl, mp)
+        self.conv = nn.sequential(c1, bc1, rl, c2, bc2, rl,
+                                  c3, bc3, rl, mp)
 
-    self.fc = nn.sequential(l1, bl1, rl, l2, bl2, rl, l3)
-    self.initialization()
+        self.fc = nn.sequential(l1, bl1, rl, l2, bl2, rl, l3)
+        self.initialization()
 
-  def initialization(self):
-    """ Xavier Initialization is suggested -- xavier uniform or normal? """
-    for layer in self.conv:
-      if not isinstance(layer, nn.Conv2d):
-        continue
-      try:
-        nn.init.xavier_uniform_(layer.weight.data)
-        nn.init.constant_(layer.bias.data, 0.0)
-      except:
-        pass
+    def initialization(self):
+        """ Xavier Initialization is suggested -- xavier uniform or normal? """
+        for layer in self.conv:
+            if not isinstance(layer, nn.Conv2d):
+                continue
+            try:
+                nn.init.xavier_uniform_(layer.weight.data)
+                nn.init.constant_(layer.bias.data, 0.0)
+            except:
+                pass
 
-    for layer in self.conv:
-      if not isinstance(layer, nn.Linear):
-        continue
-      try:
-        nn.init.xavier_uniform_(layer.weight.data)
-        nn.init.constant_(layer.bias.data, 0.0)
-      except:
-        pass
+        for layer in self.conv:
+            if not isinstance(layer, nn.Linear):
+                continue
+            try:
+                nn.init.xavier_uniform_(layer.weight.data)
+                nn.init.constant_(layer.bias.data, 0.0)
+            except:
+                pass
 
 
-  def forward(self, x, ob_type=None):
-    # TODO: Input dimension for TNet is required
-    x = self.conv(x)
-    x = x.view(x.size(0), -1)
-    if ob_type is not None:
-      x = torch.cat((x, ob_type), dim=1)
-    predicted_center = self.fc(x)
+    def forward(self, x, ob_type=None):
+        # TODO: Input dimension for TNet is required
+        x = self.conv(x)
+        x = x.view(x.size(0), -1)
+        if ob_type is not None:
+            x = torch.cat((x, ob_type), dim=1)
+        predicted_center = self.fc(x)
 
-    return predicted_center
+        return predicted_center
 
 
