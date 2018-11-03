@@ -1,5 +1,5 @@
 """
-  Corner Loss for Joint Optimization for Box Parameters.
+    Corner Loss for Joint Optimization for Box Parameters.
 """
 
 import torch
@@ -179,12 +179,13 @@ class CornerLoss_sunrgbd(nn.module):
         size_residual_label_normalized = size_residual_label / mean_size_label
         size_residual_normalized_loss = fn.smooth_l1_loss(size_residual_label_normalized, predicted_size_residual_normalized)
 
-        # TODO: Compute IOU 3D
-        #iou2ds, iou3ds = tf.py_func(compute_box3d_iou, [end_points['center'], end_points['heading_scores'], end_points['heading_residuals'], end_points['size_scores'], end_points['size_residuals'], center_label, heading_class_label, heading_residual_label, size_class_label, size_residual_label], [tf.float32, tf.float32])
-        #tf.summary.scalar('iou_2d', tf.reduce_mean(iou2ds))
-        #tf.summary.scalar('iou_3d', tf.reduce_mean(iou3ds))
-        #end_points['iou2ds'] = iou2ds
-        #end_points['iou3ds'] = iou3ds
+        # TODO: Have to add this in computational graph
+        # Compute IOU 3D
+        iou2ds, iou3ds = compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
+                                           end_points['size_scores'], end_points['size_residuals'], center_label, heading_class_label,
+                                           heading_residual_label, size_class_label, size_residual_label)
+        end_points['iou2ds'] = iou2ds
+        end_points['iou3ds'] = iou3ds
 
         # Compute BOX3D corners
         corners_3d = get_box3d_corners(end_points['center'], end_points['heading_residuals'],
@@ -207,3 +208,43 @@ class CornerLoss_sunrgbd(nn.module):
 
         return mask_loss + (center_loss + heading_class_loss + size_class_loss + heading_residual_normalized_loss*20 \
                             + size_residual_normalized_loss*20 + stage1_center_loss)*0.1 + corners_loss
+
+    def compute_box3d_iou(self, center_pred, heading_logits, heading_residuals, size_logits, size_residuals,
+                          center_label, heading_class_label, heading_residual_label, size_class_label, size_residual_label):
+        ''' Used for confidence score supervision..
+        Inputs:
+            center_pred: (B,3)
+            heading_logits: (B,NUM_HEADING_BIN)
+            heading_residuals: (B,NUM_HEADING_BIN)
+            size_logits: (B,NUM_SIZE_CLUSTER)
+            size_residuals: (B,NUM_SIZE_CLUSTER,3)
+            center_label: (B,3)
+            heading_class_label: (B,)
+            heading_residual_label: (B,)
+            size_class_label: (B,)
+            size_residual_label: (B,3)
+        Output:
+            iou2ds: (B,) birdeye view oriented 2d box ious
+            iou3ds: (B,) 3d box ious
+        '''
+        batch_size = heading_logits.shape[0]
+        heading_class = np.argmax(heading_logits, 1) # B
+        heading_residual = np.array([heading_residuals[i,heading_class[i]] for i in range(batch_size)]) # B,
+        size_class = np.argmax(size_logits, 1) # B
+        size_residual = np.vstack([size_residuals[i,size_class[i],:] for i in range(batch_size)])
+
+        iou2d_list = []
+        iou3d_list = []
+        for i in range(batch_size):
+            heading_angle = class2angle(heading_class[i], heading_residual[i], NUM_HEADING_BIN)
+            box_size = class2size(size_class[i], size_residual[i])
+            corners_3d = get_3d_box(box_size, heading_angle, center_pred[i])
+
+            heading_angle_label = class2angle(heading_class_label[i], heading_residual_label[i], NUM_HEADING_BIN)
+            box_size_label = class2size(size_class_label[i], size_residual_label[i])
+            corners_3d_label = get_3d_box(box_size_label, heading_angle_label, center_label[i])
+
+            iou_3d, iou_2d = box3d_iou(corners_3d, corners_3d_label)
+            iou3d_list.append(iou_3d)
+            iou2d_list.append(iou_2d)
+        return np.array(iou2d_list, dtype=np.float32), np.array(iou3d_list, dtype=np.float32)
