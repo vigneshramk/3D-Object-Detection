@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import globalVariables as glb
 
 class InstanceSegNet(nn.Module):
   '''
@@ -26,7 +27,7 @@ class InstanceSegNet(nn.Module):
   Output:
     logits: Tensor of shape (Batch_size,2,Num_points), scores for background/clutter and object
   '''
-  def __init__(self, num_classes, use_xavier = True, bn_decay = None):
+  def __init__(self, num_classes = 10, use_xavier = True, bn_decay = None):
     super(InstanceSegNet, self).__init__()
     bn_momentum = (1 - bn_decay) if bn_decay is not None else 0.1
 
@@ -70,11 +71,12 @@ class InstanceSegNet(nn.Module):
         nn.init.zeros_(m.bias)
 
       ### CHECK WITH TENSORFLOW INITIALIZATION
-      # elif isinstance(m, nn.BatchNorm2d):
-      #   nn.init.constant_(m.weight, 1)
-      #   nn.init.constant_(m.bias, 0)
+      elif isinstance(m, nn.BatchNorm2d):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
 
-  def forward(self, point_cloud, one_hot_vec, batch_size, is_training=True):
+  def forward(self, point_cloud, one_hot_vec):
+    batch_size = point_cloud.size()[0]
     point_cloud = point_cloud.permute(0, 2, 1) # 3D Tensor: B x N x C -> B x C x N
     num_points = point_cloud.size()[2]
 
@@ -85,7 +87,6 @@ class InstanceSegNet(nn.Module):
     point_feat = F.relu(self.bn3(self.conv3(x)))
     x = F.relu(self.bn4(self.conv4(point_feat)))
     x = F.relu(self.bn5(self.conv5(x)))
-
 
     global_feat = torch.unsqueeze(torch.mean(x, dim=2), 2)              # Output Tensor size: B x 64 x 1 x 1
     # global_feat = F.max_pool2d(x, [num_points,1], stride = [2,2], padding=0)    # Output Tensor size: B x 64 x 1 x 1
