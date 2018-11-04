@@ -1,5 +1,6 @@
 import numpy as np
 import Instance_3D_seg_v1
+import TNet
 import torch
 import pickle
 import gzip
@@ -31,8 +32,8 @@ import gzip
 # # mini_labels = types_one_hot[16:32]
 # # np.save('..\\mini_labels.npy', mini_labels)
 
-mini_input = np.load('..\\mini_input.npy')
-mini_labels = np.load('..\\mini_labels.npy')
+mini_input = np.load('../mini_input.npy')
+mini_labels = np.load('../mini_labels.npy')
 
 mini_input[:,:,3] = mini_input[:,:,3]*0.299 + mini_input[:,:,4]*0.587 + mini_input[:,:,4]*0.114
 mini_input = mini_input[:,:,:4]
@@ -46,3 +47,7 @@ print("Created tensors")
 net = Instance_3D_seg_v1.InstanceSegNet(num_classes=10)
 out = net(input_tensors, types_one_hot, batch_size=16)
 print(out.shape)
+
+tnet = TNet.TNet(3)
+out_tnet = tnet(input_tensors, types_one_hot, out)
+print(out_tnet[1].shape)
