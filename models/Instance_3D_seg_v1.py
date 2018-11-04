@@ -8,7 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class InstanceSegNet(nn.Module):
-''' 3D instance segmentation PointNet v1 network.
+  '''
+  3D instance segmentation PointNet v1 network.
   Input:
     num_classes: Indicates length of a instance of one-hot vector (Scalar)
     use_xavier: Flag for indicating whether to use Xavier or Kaiming initialization for model weights (Boolean scalar)
@@ -24,8 +25,8 @@ class InstanceSegNet(nn.Module):
 
   Output:
     logits: Tensor of shape (Batch_size,2,Num_points), scores for background/clutter and object
-'''
-  def __init__(self, num_classes = num_classes, use_xavier = use_xavier, bn_decay = bn_decay):
+  '''
+  def __init__(self, num_classes, use_xavier = True, bn_decay = None):
     super(InstanceSegNet, self).__init__()
     bn_momentum = (1 - bn_decay) if bn_decay is not None else 0.1
 
@@ -35,7 +36,7 @@ class InstanceSegNet(nn.Module):
     self.conv2 = nn.Conv2d(64, 64, (1, 1), stride=(1, 1), padding=(0,0))
     self.bn2 = nn.BatchNorm2d(64, momentum = bn_momentum)
 
-    self.point_feat = nn.conv2d(64, 64, [1,1], stride=(1, 1), padding=(0,0))
+    self.conv3 = nn.Conv2d(64, 64, [1,1], stride=(1, 1), padding=(0,0))
     self.bn3 = nn.BatchNorm2d(64, momentum = bn_momentum)
 
     self.conv4 = nn.Conv2d(64, 128, (1, 1), stride=(1, 1), padding=(0,0))
@@ -63,9 +64,9 @@ class InstanceSegNet(nn.Module):
     for m in self.modules():
       if isinstance(m, nn.Conv2d):
         if use_xavier:
-          nn.init.xavier_normal_(m.weight, mode='fan_in')
+          nn.init.xavier_uniform_(m.weight)
         else:
-          nn.init.kaiming_normal_(m.weight, mode='fan_in')
+          nn.init.kaiming_uniform_(m.weight)
         nn.init.zeros_(m.bias)
 
       ### CHECK WITH TENSORFLOW INITIALIZATION
@@ -73,8 +74,8 @@ class InstanceSegNet(nn.Module):
       #   nn.init.constant_(m.weight, 1)
       #   nn.init.constant_(m.bias, 0)
 
-  def forward(self, point_cloud, one_hot_vec, batch_size = batch_size, is_training=True):
-    num_points = point_cloud.size()[1]
+  def forward(self, point_cloud, one_hot_vec, batch_size, is_training=True):
+    num_points = point_cloud.size()[2]
 
     x = torch.unsqueeze(point_cloud, 3)        # 4D Tensor: B x C x N x 1
 
@@ -84,11 +85,13 @@ class InstanceSegNet(nn.Module):
     x = F.relu(self.bn4(self.conv4(point_feat)))
     x = F.relu(self.bn5(self.conv5(x)))
 
-    global_feat = F.max_pool2d(x, [num_points,1], stride = [2,2], padding=0)    # Output Tensor size: B x 64 x 1 x 1
-    one_hot_vec = torch.unsqueeze(torch.unsqueeze(one_hot_vec, 2), 2)        # 4D Tensor: B x K x 1 x 1
-    global_feat = torch.cat([global_feat, one_hot_vec], axis=1)        # Concatenated Tensor size: B x (64+K) x 1 x 1
-    global_feat = global_feat.repeat(1,1,num_points,1)            # Resulting Tensor size: B x (64+K) x N x 1
-    concat_feat = torch.cat([point_feat, global_feat_expand], axis=1)    # Concatenated Tensor size: B x (1024+(64+K)) x N x 1
+
+    global_feat = torch.unsqueeze(torch.mean(x, dim=2), 2)              # Output Tensor size: B x 64 x 1 x 1
+    # global_feat = F.max_pool2d(x, [num_points,1], stride = [2,2], padding=0)    # Output Tensor size: B x 64 x 1 x 1
+    one_hot_vec = torch.unsqueeze(torch.unsqueeze(one_hot_vec, 2), 2)           # 4D Tensor: B x K x 1 x 1
+    global_feat = torch.cat([global_feat, one_hot_vec], dim=1)          # Concatenated Tensor size: B x (64+K) x 1 x 1
+    global_feat = global_feat.repeat(1,1,num_points,1)                  # Resulting Tensor size: B x (64+K) x N x 1
+    concat_feat = torch.cat([point_feat, global_feat], dim=1)    # Concatenated Tensor size: B x (1024+(64+K)) x N x 1
 
     x = F.relu(self.bn6(self.conv6(concat_feat)))
     x = F.relu(self.bn7(self.conv7(x)))
@@ -97,6 +100,6 @@ class InstanceSegNet(nn.Module):
     x = self.dp1(x)
 
     logits = self.conv10(x)
-    logits = torch.squeeze(logits, 3)    # Final output Tensor size: B x 2 x N
+    logits = torch.squeeze(logits, 3)        # Final output Tensor size: B x 2 x N
 
     return logits
