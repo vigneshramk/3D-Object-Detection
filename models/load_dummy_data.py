@@ -4,7 +4,7 @@ import torch
 import pickle
 import gzip
 
-with gzip.open('..\\sunrgbd_train_preprocessed.p', 'rb') as f:
+with gzip.open('../sunrgbd_train_preprocessed.pickle', 'rb') as f:
     id_list, box2d_list, input_list, type_list, frustum_angle_list, prob_list = pickle.load(f)
 
 print("Loaded data!")
