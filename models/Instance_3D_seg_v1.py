@@ -71,9 +71,9 @@ class InstanceSegNet(nn.Module):
         nn.init.zeros_(m.bias)
 
       ### CHECK WITH TENSORFLOW INITIALIZATION
-      elif isinstance(m, nn.BatchNorm2d):
-        nn.init.constant_(m.weight, 1)
-        nn.init.constant_(m.bias, 0)
+      # elif isinstance(m, nn.BatchNorm2d):
+        # nn.init.constant_(m.weight, 1)
+        # nn.init.constant_(m.bias, 0)
 
   def forward(self, point_cloud, one_hot_vec):
     batch_size = point_cloud.size()[0]
