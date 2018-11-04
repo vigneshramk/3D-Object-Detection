@@ -204,11 +204,13 @@ class CSVDataset(Dataset):
     def __getitem__(self, idx):
 
         img = self.load_image(idx)
+        name =  self.image_names[idx].strip('/home/kvr/Documents/Projects/3D-Object-Detection/2d_data/training/image/').strip('.jpg')
+        name = int(name)
         annot = self.load_annotations(idx)
         sample = {'img': img, 'annot': annot}
         if self.transform:
             sample = self.transform(sample)
-
+        sample['idx'] = name 
         return sample
 
     def load_image(self, image_index):
@@ -305,6 +307,8 @@ def collater(data):
     imgs = [s['img'] for s in data]
     annots = [s['annot'] for s in data]
     scales = [s['scale'] for s in data]
+    indices = [s['idx'] for s in data]
+ 
         
     widths = [int(s.shape[0]) for s in imgs]
     heights = [int(s.shape[1]) for s in imgs]
@@ -327,7 +331,6 @@ def collater(data):
 
         if max_num_annots > 0:
             for idx, annot in enumerate(annots):
-                #print(annot.shape)
                 if annot.shape[0] > 0:
                     annot_padded[idx, :annot.shape[0], :] = annot
     else:
@@ -336,12 +339,13 @@ def collater(data):
 
     padded_imgs = padded_imgs.permute(0, 3, 1, 2)
 
-    return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales}
+    return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales, 'idx':indices}
 
 class Resizer(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample, min_side=608, max_side=1024):
+
         image, annots = sample['img'], sample['annot']
 
         rows, cols, cns = image.shape
@@ -392,7 +396,7 @@ class Augmenter(object):
             annots[:, 0] = cols - x2
             annots[:, 2] = cols - x_tmp
 
-            sample = {'img': image, 'annot': annots}
+            sample = {'img': image, 'annot': annots, 'idx': sample['idx']}
 
         return sample
 

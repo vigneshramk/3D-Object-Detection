@@ -22,6 +22,8 @@ assert torch.__version__.split('.')[1] == '4'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
 
+result_dir = '/home/kvr/Documents/Projects/3D-Object-Detection/pytorch-retinanet/sun_csv/train_scores'
+
 def main(args=None):
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
 
@@ -34,12 +36,12 @@ def main(args=None):
 
     parser = parser.parse_args(args)
 
-	if parser.dataset == 'coco':
-		dataset_val = CocoDataset(parser.coco_path, set_name='val2017', transform=transforms.Compose([Normalizer(), Resizer()]))
-	elif parser.dataset == 'csv':
-		dataset_val = CSVDataset(train_file=parser.csv_val, class_list=parser.csv_classes, transform=transforms.Compose([Normalizer(), Resizer()]))
-	else:
-		raise ValueError('Dataset type not understood (must be csv or coco), exiting.')
+    if parser.dataset == 'coco':
+        dataset_val = CocoDataset(parser.coco_path, set_name='val2017', transform=transforms.Compose([Normalizer(), Resizer()]))
+    elif parser.dataset == 'csv':
+        dataset_val = CSVDataset(train_file=parser.csv_val, class_list=parser.csv_classes, transform=transforms.Compose([Normalizer(), Resizer()]))
+    else:
+        raise ValueError('Dataset type not understood (must be csv or coco), exiting.')
 
 
     sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
@@ -63,6 +65,9 @@ def main(args=None):
         cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
     for idx, data in enumerate(dataloader_val):
+
+        file = data['idx'][0] 
+        filename = result_dir + '/' + str(file).zfill(6) + '.txt'
 
         with torch.no_grad():
             st = time.time()
@@ -90,12 +95,24 @@ def main(args=None):
                 cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
                 print(label_name)
 
-            cv2.imshow('img', img)
-            k = cv2.waitKey(1000)
-            if k==27:    # Esc key to stop
-                break
-            else:
-                print(k)
+                if os.path.exists(filename):
+                    append_write = 'a' # append if already exists
+                else:
+                    append_write = 'w' # make a new file if not
+    
+                # Write to text file in the result folder
+                with open(filename, append_write) as file:
+                    prob = scores[idxs[0][j]]
+                    file.write(label_name + ' ')
+                    file.write("%d %d %d %d " %(x1,y1,x2,y2))
+                    file.write('%.2f \n' %prob)
+
+            # cv2.imshow('img', img)
+            # k = cv2.waitKey(1000)
+            # if k==27:    # Esc key to stop
+            #     break
+            # else:
+            #     print(k)
 
 
 
