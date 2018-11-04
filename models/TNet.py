@@ -53,14 +53,26 @@ class TNet(nn.Module):
                 pass
 
 
-    def forward(self, x, ob_type=None):
+    def forward(self, point_cloud, logits, one_hot_vec):
+        num_point = point_cloud.size(1)
+        mask = logits[0:, 0:, 0:1] < logits[0:, 0:, 1:2] # BxNx1
+        mask_count = torch.sum(mask, dim=1, keep_dim=True).repeat(1, 1, 3) # Bx1x3
+        point_cloud_xyz = point_cloud[0:, 0:, 0:3] # BxNx3
+
+        mask_xyz_mean = torch.sum(mask.repeat(1, 1, 3)*point_cloud_xyz, dim=1, keep_dim=True) # Bx1X3
+        mask_xyz_mean = mask_xyz_mean/torch.max(mask_count, 1) # Bx1x3
+        point_cloud_xyz_stage1 = point_cloud_xyz - mask_xyz_mean.repeat(1, num_point, 1)
+
+        # ---- Regress 1st stage center ----
+        x = point_cloud_xyz_stage1.unsqueeze(2)
+
         # TODO: Input dimension for TNet is required
         x = self.conv(x)
         x = x.view(x.size(0), -1)
-        if ob_type is not None:
-            x = torch.cat((x, ob_type), dim=1)
-        predicted_center = self.fc(x)
+        x = torch.cat((x, one_hot_vec), dim=1)
+        stage1_center = self.fc(x)
+        stage1_center = stage1_center + torch.squeeze(mask_xyz_mean, 1)
 
-        return predicted_center
+        return point_cloud_xyz, stage1_center, mask
 
 
