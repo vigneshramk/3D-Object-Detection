@@ -75,6 +75,7 @@ class InstanceSegNet(nn.Module):
       #   nn.init.constant_(m.bias, 0)
 
   def forward(self, point_cloud, one_hot_vec, batch_size, is_training=True):
+    point_cloud = point_cloud.permute(0, 2, 1) # 3D Tensor: B x N x C -> B x C x N
     num_points = point_cloud.size()[2]
 
     x = torch.unsqueeze(point_cloud, 3)        # 4D Tensor: B x C x N x 1
@@ -102,4 +103,4 @@ class InstanceSegNet(nn.Module):
     logits = self.conv10(x)
     logits = torch.squeeze(logits, 3)        # Final output Tensor size: B x 2 x N
 
-    return logits
+    return logits.permute(0, 2, 1)
