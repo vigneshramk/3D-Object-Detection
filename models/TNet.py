@@ -75,7 +75,7 @@ class TNet(nn.Module):
         if torch.isnan(mask_xyz_mean).any():
             print('Mask xyz mean1 is Nan')
 
-        mask_xyz_mean = mask_xyz_mean/torch.max(mask_count, 1)[0].float().unsqueeze(1) # Bx1x3
+        mask_xyz_mean = mask_xyz_mean/torch.max(mask_count, torch.ones_like(mask_count))[0].float().unsqueeze(1) # Bx1x3
         if torch.isnan(mask_xyz_mean.repeat(1, num_point, 1)).any():
             print('Mask xyz mean2  repeat is Nan',mask_xyz_mean)
 
