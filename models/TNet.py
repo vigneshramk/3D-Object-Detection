@@ -20,7 +20,7 @@ class TNet(nn.Module):
         bc2 = nn.BatchNorm2d(128)
         bc3 = nn.BatchNorm2d(256)
 
-        l1 = nn.Linear(266, 256)                 # TODO: Add Input dimension
+        l1 = nn.Linear(256 + glb.NUM_CLASS, 256)                 # TODO: Add Input dimension
         l2 = nn.Linear(256, 128)
         l3 = nn.Linear(128, 3)
 

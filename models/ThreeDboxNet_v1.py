@@ -48,7 +48,7 @@ class Model(nn.Module):
         self.layers = [self.cnn1, self.cnn2, self.cnn3, self.cnn4, self.fc1, self.fc2, self.fc3]
         self.initializeWeights()
         self.end_points = {}
-        self.mean_size_arr = glb.mean_size_arr                                
+        self.mean_size_arr = glb.mean_size_arr
 
 
     def forward(self, object_point_cloud, mask, stage1_center, one_hot_vec):
@@ -69,14 +69,14 @@ class Model(nn.Module):
         x = self.fc3(x)
         center = x[:,0:3] + stage1_center
         self.end_points['center']=center
-        heading_scores = x[:,3:NUM_HEADING_BIN]
-        heading_residuals_normalized = x[:3+NUM_HEADING_BIN,NUM_HEADING_BIN]
+        heading_scores = x[:, 3:3+NUM_HEADING_BIN]
+        heading_residuals_normalized = x[:, 3+NUM_HEADING_BIN:3+2*NUM_HEADING_BIN]
         self.end_points['heading_scores'] = heading_scores # BxNUM_HEADING_BIN
         self.end_points['heading_residuals_normalized'] = heading_residuals_normalized # BxNUM_HEADING_BIN (should be -1 to 1)
         self.end_points['heading_residuals'] = heading_residuals_normalized * (np.pi/NUM_HEADING_BIN) # BxNUM_HEADING_BIN
-    
-        size_scores = x[:,3+NUM_HEADING_BIN*2:NUM_SIZE_CLUSTER+3+NUM_HEADING_BIN*2+1] # BxNUM_SIZE_CLUSTER
-        size_residuals_normalized = x[:,3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER:NUM_SIZE_CLUSTER*3+3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER+1]
+
+        size_scores = x[:,3+NUM_HEADING_BIN*2:NUM_SIZE_CLUSTER+3+NUM_HEADING_BIN*2] # BxNUM_SIZE_CLUSTER
+        size_residuals_normalized = x[:,3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER:NUM_SIZE_CLUSTER*3+3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER]
         size_residuals_normalized = size_residuals_normalized.view([object_point_cloud.size(0), NUM_SIZE_CLUSTER, 3]) # BxNUM_SIZE_CLUSTERx3
         self.end_points['size_scores'] = size_scores
         self.end_points['size_residuals_normalized'] = size_residuals_normalized
