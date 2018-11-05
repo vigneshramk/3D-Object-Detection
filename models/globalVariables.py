@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 NUM_HEADING_BIN = 12
 NUM_SIZE_CLUSTER = 10
@@ -23,3 +24,4 @@ type_mean_size = {'bathtub': np.array([0.765840,1.398258,0.472728]),
 mean_size_arr = np.zeros((NUM_SIZE_CLUSTER, 3))
 for i in range(NUM_SIZE_CLUSTER):
     mean_size_arr[i,:] = type_mean_size[class2type[i]]
+mean_size_arr = torch.FloatTensor(mean_size_arr).cuda()

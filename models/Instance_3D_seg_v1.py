@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import globalVariables as glb
+import models.globalVariables as glb
 
 class InstanceSegNet(nn.Module):
   '''

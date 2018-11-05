@@ -1,12 +1,12 @@
 import torch.nn as nn
 import torch
 import time
-import Instance_3D_seg_v1 as ThreeDseg
-import ThreeDboxNet_v1 as boxNet
-from TNet import TNet
+import models.Instance_3D_seg_v1 as ThreeDseg
+import models.ThreeDboxNet_v1 as boxNet
+from models.TNet import TNet
 
 class Model(nn.Module):
-    def __init__():
+    def __init__(self):
         super().__init__()
         self.ThreeDseg = ThreeDseg.InstanceSegNet()
         self.TNet = TNet()

@@ -4,10 +4,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-import Mother
+import models.Mother as Mother
 import sunrgbd_dataloader
-import loss
-import globalVariables as glb
+from loss import CornerLoss_sunrgbd
+import models.globalVariables as glb
 from hyperParams import hyp
 from logger import logger
 
@@ -67,10 +67,12 @@ class Trainer:
             self.log("Hyperparameters loaded from checkpoint as {}".format(hyp))
 
     def run(self, train_loader, val_loader, epochs=hyp["num_epochs"]):
+        self.model=self.model.cuda()
+        lossfn = CornerLoss_sunrgbd()
         self.log("Start Training...")
         for epoch in range(epochs):
-            self.train_batch_loss = 0
-            self.train_avg_loss = 0
+            self.train_batch_loss = []
+            self.train_avg_loss = []
             valid_batch_loss = 0  # Resets valid loss for each epoch
 
             for batch_num, (features, class_labels, labels_dict) in enumerate(train_loader):
@@ -80,18 +82,21 @@ class Trainer:
                 class_labels = one_hot_encoding(class_labels)
                 Y = torch.FloatTensor(class_labels)
                 Y = Y.cuda()
-
+                     
                 logits, end_points = self.model(X, Y)
-                
+                self.log("L:{} EP:{}".format(logits,end_points)) 
                 # labels_dict = mask_label, center_label, heading_class_label, heading_residual_label, 
                 # size_class_label, size_residual_label, end_points
-                corner_loss = loss(logits, labels_dict['mask_label'], labels_dict['center_label'], 
+                for key in labels_dict.keys():
+                    labels_dict[key]=labels_dict[key].cuda()
+                corner_loss = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'], 
                                 labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
                                 labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 
                 # Checks for loss exploding
-                if math.isnan(corner_loss):
-                    self.save_checkpoint("fault.pth","fault.txt")
+                if math.isnan(corner_loss.item()):
+                  #  self.save_checkpoint("fault.pth","fault.txt")
+                    self.log("Logits:{} \nEnd_points:{} ".format(logits,end_points))
                     sys.exit("Loss exploded!")
 
                 # Implements gradient clipping if desired
@@ -107,7 +112,7 @@ class Trainer:
                 self.train_avg_loss.append(np.mean(self.train_batch_loss))
                 
                 if batch_num % hyp["log_freq"] ==0:
-                    self.log("Gradient update: {0}, loss: {1:.8f}".format(batch_num+1, corner_loss.item()))
+                    self.log("Batch number: {0}, loss: {1:.8f}".format(batch_num+1, corner_loss.item()))
             
             # Stores last entry in running average of batch losses as epoch loss
             self.train_epoch_loss.append(self.train_avg_loss[-1])
@@ -134,7 +139,7 @@ class Trainer:
             self.save_checkpoint()
 
             self.log("epoch:", epoch+1, "train avg loss:", round(train_epoch_loss[-1],4), "val loss:", round(valid_loss[-1],4))
-
+            self.logger.close()
 
 # Instantiate models
 net = Mother.Model()
@@ -142,6 +147,6 @@ AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hy
 
 model_trainer = Trainer(net, AdamOptimizer)
 
-train_loader = sunrgbd_dataloader.test_dataloader()
-val_loader = sunrgbd_dataloader.test_dataloader()
+train_loader = sunrgbd_dataloader.dataloader()
+val_loader = sunrgbd_dataloader.dataloader()
 model_trainer.run(train_loader, val_loader, epochs=hyp['num_epochs'])

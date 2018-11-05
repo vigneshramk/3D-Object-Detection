@@ -108,9 +108,9 @@ class SUN_TrainDataSet(Dataset):
         angle_class, angle_residual = data_utils.angle2class(heading_angle, NUM_HEADING_BIN)
 
         point_set = torch.FloatTensor(point_set)
-        seg = torch.LongTensor(seg)
-        box3d_center = torch.LongTensor(box3d_center)
-        size_residual = torch.LongTensor(size_residual)
+        seg = torch.FloatTensor(seg)
+        box3d_center = torch.FloatTensor(box3d_center)
+        size_residual = torch.FloatTensor(size_residual)
 
         if self.one_hot:
             return point_set, seg, box3d_center, angle_class, angle_residual, size_class, size_residual, rot_angle, class_label
@@ -225,6 +225,10 @@ def test_dataloader():
         print(labels_dict.keys())
         i+=1
 
+def dataloader():
+    train_dataset = SUN_TrainDataSet(2048)
+    train_loader = SUN_TrainLoader(train_dataset, batch_size=16, shuffle=True)
+    return train_loader
 # Run this to test
 # test_dataloader()
 

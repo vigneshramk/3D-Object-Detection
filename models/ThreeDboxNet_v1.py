@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 import time
 import numpy as np
-import globalVariables as glb
+import models.globalVariables as glb
 
 NUM_HEADING_BIN = glb.NUM_HEADING_BIN
 NUM_SIZE_CLUSTER= glb.NUM_SIZE_CLUSTER
@@ -80,7 +80,7 @@ class Model(nn.Module):
         size_residuals_normalized = size_residuals_normalized.view([object_point_cloud.size(0), NUM_SIZE_CLUSTER, 3]) # BxNUM_SIZE_CLUSTERx3
         self.end_points['size_scores'] = size_scores
         self.end_points['size_residuals_normalized'] = size_residuals_normalized
-        self.end_points['size_residuals'] = size_residuals_normalized * torch.FloatTensor(self.mean_size_arr).unsqueeze(0)
+        self.end_points['size_residuals'] = size_residuals_normalized * self.mean_size_arr.unsqueeze(0)
         return self.end_points
 
 

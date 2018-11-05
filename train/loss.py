@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as fn
 import numpy as np
-import globalVariables as glb
+import models.globalVariables as glb
 from scipy.spatial import ConvexHull
 
 NUM_HEADING_BIN = glb.NUM_HEADING_BIN
@@ -29,7 +29,7 @@ def make_onehot(labels, C=2):
     target : torch.autograd.Variable B x C.  One-hot encoded.
     '''
     one_hot = torch.FloatTensor(len(labels), C).zero_()
-    target = one_hot.scatter_(1, labels.unsqueeze(-1).long(), 1)
+    target = one_hot.cuda().scatter_(1, labels.unsqueeze(-1).long(), 1)
 
     return target
 
@@ -44,9 +44,9 @@ def get_box3d_corners(center, heading_residuals, size_residuals):
     """
     batch_size = center.shape[0]
     heading_bin_centers = torch.from_numpy(np.arange(0, 2*np.pi, 2*np.pi/NUM_HEADING_BIN)).float() # (NH,)
-    headings = heading_residuals + torch.unsqueeze(heading_bin_centers, 0) # (B,NH)
+    headings = heading_residuals + torch.unsqueeze(heading_bin_centers, 0).cuda() # (B,NH)
 
-    mean_sizes = torch.unsqueeze(torch.from_numpy(mean_size_arr).float(), 0) + size_residuals # (B,NS,1)
+    mean_sizes = torch.unsqueeze(mean_size_arr.float(), 0) + size_residuals # (B,NS,1)
     sizes = mean_sizes + size_residuals # (B,NS,3)
     sizes = torch.unsqueeze(sizes, 1).repeat(1, NUM_HEADING_BIN, 1, 1)
     headings = torch.unsqueeze(headings, -1).repeat(1, 1, NUM_SIZE_CLUSTER)
@@ -71,8 +71,8 @@ def get_box3d_corners_helper(centers, headings, sizes):
     corners = torch.cat([torch.unsqueeze(x_corners, 1), torch.unsqueeze(y_corners, 1), torch.unsqueeze(z_corners, 1)], dim=1) # (N,3,8)
     c = torch.cos(headings)
     s = torch.sin(headings)
-    ones = torch.ones([N]).float()
-    zeros = torch.zeros([N]).float()
+    ones = torch.ones([N]).float().cuda()
+    zeros = torch.zeros([N]).float().cuda()
     row1 = torch.stack([c, zeros, s], dim=1) # (N,3)
     row2 = torch.stack([zeros, ones, zeros], dim=1)
     row3 = torch.stack([-s, zeros, c], dim=1)
@@ -112,7 +112,7 @@ class CornerLoss(nn.Module):
         scls_one_hot_tiled = torch.unsqueeze(scls_one_hot, 2).repeat(1, 1, 3)
         predicted_size_residual_normalized = torch.sum(end_points['size_residuals_normalized']*scls_one_hot_tiled, dim=1)
 
-        mean_size_arr_expand = torch.unsqueeze(torch.from_numpy(g_mean_size_arr), 0)
+        mean_size_arr_expand = torch.unsqueeze(g_mean_size_arr, 0)
         mean_size_label = torch.sum(scls_one_hot_tiled * mean_size_arr_expand, dim=1)
         size_residual_label_normalized = size_residual_label / mean_size_label
         size_residual_normalized_loss = fn.smooth_l1_loss(size_residual_label_normalized, predicted_size_residual_normalized)
@@ -211,7 +211,7 @@ class CornerLoss_sunrgbd(nn.Module):
         assert predicted_size_residual_normalized.size(0) == B
         assert predicted_size_residual_normalized.size(1) == 3
 
-        mean_size_arr_expand = torch.unsqueeze(torch.from_numpy(mean_size_arr), 0).float() # 1xNUM_SIZE_CLUSTERx3
+        mean_size_arr_expand = torch.unsqueeze(mean_size_arr, 0).float() # 1xNUM_SIZE_CLUSTERx3
         assert mean_size_arr_expand.size(0) == 1
         assert mean_size_arr_expand.size(1) == NUM_SIZE_CLUSTER
         assert mean_size_arr_expand.size(2) == 3
@@ -254,13 +254,13 @@ class CornerLoss_sunrgbd(nn.Module):
         heading_bin_centers = torch.from_numpy(np.arange(0, 2*np.pi, 2*np.pi/NUM_HEADING_BIN)).float() # (NH, )
         assert heading_bin_centers.size(0) == NUM_HEADING_BIN
 
-        heading_label = torch.unsqueeze(heading_residual_label, 1) + torch.unsqueeze(heading_bin_centers, 0) # (B, NH)
+        heading_label = torch.unsqueeze(heading_residual_label, 1) + torch.unsqueeze(heading_bin_centers, 0).cuda() # (B, NH)
         assert heading_label.size(0) == B
         assert heading_label.size(1) == NUM_HEADING_BIN
 
         heading_label = torch.sum(hcls_onehot.float() * heading_label, dim=1)
 
-        mean_sizes = torch.unsqueeze(torch.from_numpy(mean_size_arr).float(), 0) # (1, NS, 3)
+        mean_sizes = torch.unsqueeze(mean_size_arr.float(), 0) # (1, NS, 3)
         size_label = mean_sizes + torch.unsqueeze(size_residual_label, 1) # (1, NS, 3) + (B, 1, 3) = (B, NS, 3)
         size_label = torch.sum(torch.unsqueeze(scls_one_hot.float(), -1)*size_label, dim=1) # (B, 3)
         corners_3d_gt = get_box3d_corners_helper(center_label, heading_label, size_label) # (B, 8, 3)
@@ -294,7 +294,7 @@ class CornerLoss_sunrgbd(nn.Module):
         '''
         batch_size = heading_logits.shape[0]
         heading_class = torch.argmax(heading_logits, 1) # B
-        heading_residual = torch.tensor([heading_residuals[i, heading_class[i]] for i in range(batch_size)]) # B,
+        heading_residual = torch.tensor([heading_residuals[i, heading_class[i]] for i in range(batch_size)]).cuda() # B,
         size_class = torch.argmax(size_logits, 1) # B
         size_residual = torch.stack([size_residuals[i, size_class[i],:] for i in range(batch_size)], dim=0)
 
@@ -318,14 +318,14 @@ class CornerLoss_sunrgbd(nn.Module):
         ''' Inverse function to angle2class '''
         angle_per_class = 2*np.pi/float(num_class)
         angle_center = pred_cls * angle_per_class
-        angle = angle_center.float() + residual
+        angle = angle_center.float().cuda() + residual
         if to_label_format and angle>np.pi:
             angle = angle - 2*np.pi
         return angle
 
     def class2size(self, pred_cls, residual):
         mean_size = glb.type_mean_size[glb.class2type[pred_cls.item()]]
-        return torch.from_numpy(mean_size).float() + residual
+        return torch.from_numpy(mean_size).float().cuda() + residual.cuda()
 
     def get_3d_box(self, box_size, heading_angle, center):
         ''' box_size is array(l,w,h), heading_angle is radius clockwise from pos x axis, center is xyz of box center
@@ -337,7 +337,7 @@ class CornerLoss_sunrgbd(nn.Module):
         x_corners = torch.stack([l/2,l/2,-l/2,-l/2,l/2,l/2,-l/2,-l/2], dim=0);
         y_corners = torch.stack([h/2,h/2,h/2,h/2,-h/2,-h/2,-h/2,-h/2], dim=0);
         z_corners = torch.stack([w/2,-w/2,-w/2,w/2,w/2,-w/2,-w/2,w/2], dim=0);
-        corners_3d = torch.matmul(R, torch.stack([x_corners,y_corners,z_corners], dim=0))
+        corners_3d = torch.matmul(R.cuda(), torch.stack([x_corners,y_corners,z_corners], dim=0).cuda())
         corners_3d[0,:] = corners_3d[0,:] + center[0];
         corners_3d[1,:] = corners_3d[1,:] + center[1];
         corners_3d[2,:] = corners_3d[2,:] + center[2];
@@ -363,9 +363,9 @@ class CornerLoss_sunrgbd(nn.Module):
        iou_2d = inter_area/(area1+area2-inter_area)
        ymax = torch.min(corners1[0,1], corners2[0,1])
        ymin = torch.max(corners1[4,1], corners2[4,1])
-       inter_vol = inter_area * torch.max(torch.tensor([0.0]), ymax-ymin)
-       vol1 = self.box3d_vol(corners1)
-       vol2 = self.box3d_vol(corners2)
+       inter_vol = torch.tensor([inter_area]).cuda() * torch.max(torch.tensor([0.0]).cuda(), ymax-ymin)
+       vol1 = self.box3d_vol(corners1).cuda()
+       vol2 = self.box3d_vol(corners2).cuda()
        iou = inter_vol / (vol1 + vol2 - inter_vol)
        return iou, iou_2d
 

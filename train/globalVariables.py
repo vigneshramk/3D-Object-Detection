@@ -1,1 +1,1 @@
-./models/globalVariables.py
+../models/globalVariables.py

@@ -7,5 +7,5 @@ hyp = {
 "optim_reg": 1e-5,
 "model_fname": "Train_v1",
 "hyp_fname": "Hyp_v1",
-"hyp_freq": 10
+"log_freq": 1
 }

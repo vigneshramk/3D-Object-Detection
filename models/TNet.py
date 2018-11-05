@@ -5,7 +5,7 @@
 
 import torch
 import torch.nn as nn
-import globalVariables as glb
+import models.globalVariables as glb
 
 class TNet(nn.Module):
     def __init__(self, ch=3):

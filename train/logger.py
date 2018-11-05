@@ -6,15 +6,15 @@ class logger:
 
     def __init__(self):
         self.fname = "log_{}.txt".format(time.time())
-        self.handle = open(self.fname,'wb',buffering=0)
+        self.handle = open(self.fname,'a')
         self.track_stats = {}
         self.current_epoch = -1
 
     def log(self,*args,**kwargs):
         print(*args,**kwargs)
-        self.handle.write(*args,**kwargs)
+        self.handle.write(*args,*kwargs)
         self.handle.write("\n")
-
+        self.handle.flush()
 
     def close(self):
         self.handle.close()
