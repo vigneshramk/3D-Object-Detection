@@ -84,7 +84,6 @@ class Trainer:
                 Y = Y.cuda()
                      
                 logits, end_points = self.model(X, Y)
-                self.log("L:{} EP:{}".format(logits,end_points)) 
                 # labels_dict = mask_label, center_label, heading_class_label, heading_residual_label, 
                 # size_class_label, size_residual_label, end_points
                 for key in labels_dict.keys():
@@ -93,10 +92,18 @@ class Trainer:
                                 labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
                                 labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 
+                if batch_num % hyp["log_freq"] ==0:
+                    self.log("Batch number: {0}, loss: {1:.6f}".format(batch_num+1, corner_loss.item()))
+
+
                 # Checks for loss exploding
                 if math.isnan(corner_loss.item()):
                   #  self.save_checkpoint("fault.pth","fault.txt")
-                    self.log("Logits:{} \nEnd_points:{} ".format(logits,end_points))
+                    for key in end_points.keys():
+                        if torch.isnan(end_points[key]):
+                            sys.log("Loss exploded @{}. Dumped:{}".format(key,end_points[key]))
+                    if torch.isnan(logits):
+                        sys.log("Loss exploded @logits. Dumped:{}".format(logits))
                     sys.exit("Loss exploded!")
 
                 # Implements gradient clipping if desired
@@ -111,8 +118,6 @@ class Trainer:
                 self.train_batch_loss.append(corner_loss.item())
                 self.train_avg_loss.append(np.mean(self.train_batch_loss))
                 
-                if batch_num % hyp["log_freq"] ==0:
-                    self.log("Batch number: {0}, loss: {1:.8f}".format(batch_num+1, corner_loss.item()))
             
             # Stores last entry in running average of batch losses as epoch loss
             self.train_epoch_loss.append(self.train_avg_loss[-1])
