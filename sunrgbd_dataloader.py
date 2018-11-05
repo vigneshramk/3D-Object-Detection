@@ -154,6 +154,8 @@ def convert_batch(batch):
     frustum_batch = torch.zeros(batch_size,max_points,4)
     class_batch = []
     seg_batch = torch.zeros(batch_size,max_points)
+
+    labels_dict = {}
     
 
     box3d_center_batch = []
@@ -191,7 +193,14 @@ def convert_batch(batch):
 
     class_batch = torch.IntTensor(class_batch)
 
-    return frustum_batch,seg_batch,class_batch,box3d_center_batch,angle_class_batch,angle_residual_batch,size_class_batch,size_residual_batch
+    labels_dict['mask_label'] = seg_batch
+    labels_dict['center_label'] = box3d_center_batch
+    labels_dict['heading_class_label'] =  angle_class_batch
+    labels_dict['heading_residual_label'] = angle_residual_batch
+    labels_dict['size_class_label'] = size_class_batch
+    labels_dict['size_residual_label'] = size_residual_batch
+
+    return frustum_batch,class_batch,labels_dict
         
 class SUN_TrainLoader(DataLoader):
 
@@ -210,10 +219,10 @@ def test_dataloader():
         if i>0:
             break
 
-        frustum_batch,seg_batch,class_batch,box3d_center_batch,angle_class_batch,angle_residual_batch,size_class_batch,size_residual_batch = data
+        frustum_batch,class_batch,labels_dict = data
 
-        print(frustum_batch.shape,class_batch.shape,seg_batch.shape,box3d_center_batch.shape)
-        print(angle_class_batch.shape,angle_residual_batch.shape,size_class_batch.shape,size_residual_batch.shape)
+        print(frustum_batch.shape,class_batch.shape)
+        print(labels_dict.keys())
         i+=1
 
 # Run this to test
