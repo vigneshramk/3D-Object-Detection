@@ -36,6 +36,7 @@ class Trainer:
         self.metrics = {}
         self.logger = logger()
         self.log=self.logger.log
+        self.plot=self.logger.plot      #expects array,label,epoch or array,label
             
     def save_checkpoint(self, train_loss, valid_loss, fname_model = "Train_v1.pth", fname_hyp = "Hyp_v1.pth"):
         save_dict = {"epoch_idx": self.epoch + 1, "model_state_dict": self.model.state_state(), 
