@@ -3,7 +3,9 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
+
 import Mother
+import sunrgbd_dataloader
 import loss
 import globalVariables as glb
 from hyperParams import hyp
@@ -134,9 +136,12 @@ class Trainer:
             self.log("epoch:", epoch+1, "train avg loss:", round(train_epoch_loss[-1],4), "val loss:", round(valid_loss[-1],4))
 
 
-# # Instantiate models
-# net = Mother.Model()
-# AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optimizer_regularization'])
+# Instantiate models
+net = Mother.Model()
+AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optim_reg'])
 
-# model_trainer = Trainer(net, AdamOptimizer)
-# model_trainer.run((self, train_loader, val_loader, epochs=hyp['num_epochs'])
+model_trainer = Trainer(net, AdamOptimizer)
+
+train_loader = sunrgbd_dataloader.test_dataloader()
+val_loader = sunrgbd_dataloader.test_dataloader()
+model_trainer.run(train_loader, val_loader, epochs=hyp['num_epochs'])
