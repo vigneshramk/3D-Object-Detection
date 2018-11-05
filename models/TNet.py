@@ -60,13 +60,27 @@ class TNet(nn.Module):
 
         num_point = point_cloud.size(1)
         mask = logits[0:, 0:, 0:1] < logits[0:, 0:, 1:2] # BxNx1
+        print(logits.shape,mask.shape)
+        if torch.isnan(mask).any():
+            print('Mask is Nan')
         mask_count = torch.sum(mask, dim=1, keepdim=True).repeat(1, 1, 3) # Bx1x3
         point_cloud_xyz = point_cloud[0:, 0:, 0:3] # BxNx3
+        if torch.isnan(mask_count).any():
+            print('Mask count is Nan')
+        if torch.isnan(point_cloud_xyz).any():
+            print('point cloud xyz is Nan')
+
 
         mask_xyz_mean = torch.sum(mask.float().repeat(1, 1, 3)*point_cloud_xyz, dim=1, keepdim=True) # Bx1X3
-        mask_xyz_mean = mask_xyz_mean/torch.max(mask_count, 1)[0].float().unsqueeze(1) # Bx1x3
-        point_cloud_xyz_stage1 = point_cloud_xyz - mask_xyz_mean.repeat(1, num_point, 1)
+        if torch.isnan(mask_xyz_mean).any():
+            print('Mask xyz mean1 is Nan')
 
+        mask_xyz_mean = mask_xyz_mean/torch.max(mask_count, 1)[0].float().unsqueeze(1) # Bx1x3
+        if torch.isnan(mask_xyz_mean.repeat(1, num_point, 1)).any():
+            print('Mask xyz mean2  repeat is Nan',mask_xyz_mean)
+
+        print(num_point)
+        point_cloud_xyz_stage1 = point_cloud_xyz - mask_xyz_mean.repeat(1, num_point, 1)
         if torch.isnan(point_cloud_xyz_stage1).any():
             print('TNet: point_cloud_xyz_stage1 is NaN')
 

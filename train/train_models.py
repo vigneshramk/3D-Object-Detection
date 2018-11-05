@@ -100,10 +100,13 @@ class Trainer:
                 if math.isnan(corner_loss.item()):
                   #  self.save_checkpoint("fault.pth","fault.txt")
                     for key in end_points.keys():
-                        if torch.isnan(end_points[key]).any():
-                            sys.log("Loss exploded @{}. Dumped:{}".format(key,end_points[key]))
+                        try:
+                            if torch.isnan(end_points[key]).any():
+                                self.log("Loss exploded @{}. Dumped:{}".format(key,end_points[key]))
+                        except:
+                            pass
                     if torch.isnan(logits).any():
-                        sys.log("Loss exploded @logits. Dumped:{}".format(logits))
+                        self.log("Loss exploded @logits. Dumped:{}".format(logits))
                     sys.exit("Loss exploded!")
 
                 # Implements gradient clipping if desired
