@@ -10,7 +10,7 @@ class Model(nn.Module):
         super().__init__()
         self.ThreeDseg = ThreeDseg.InstanceSegNet()
         self.TNet = TNet()
-        self.boxNet = boxNet.Model(num_in_channels=1, num_input_to_fc=512+10, activation=nn.ReLU, bn_decay=0)
+        self.boxNet = boxNet.Model(num_in_channels=3, num_input_to_fc=(512+10), activation=nn.ReLU, bn_decay=0)
 
 
     def forward(self, point_cloud, one_hot_vec):

@@ -4,6 +4,7 @@ import TNet
 import torch
 import pickle
 import gzip
+import ThreeDboxNet_v1 as boxNet
 
 # with gzip.open('..\\sunrgbd_train_preprocessed.p', 'rb') as f:
 #     id_list, box2d_list, input_list, type_list, frustum_angle_list, prob_list = pickle.load(f)
@@ -45,9 +46,10 @@ print("Created tensors")
 # print(types_one_hot.size())
 
 net = Instance_3D_seg_v1.InstanceSegNet(num_classes=10)
-out = net(input_tensors, types_one_hot, batch_size=16)
+out = net(input_tensors, types_one_hot)
 print(out.shape)
 
 tnet = TNet.TNet(3)
-out_tnet = tnet(input_tensors, types_one_hot, out)
-print(out_tnet[1].shape)
+pc_xyz, stage1_center, mask = tnet(input_tensors, types_one_hot, out)
+box = boxNet.Model(num_in_channels=3, num_input_to_fc=(512+10))
+end_points = box.forward(pc_xyz, mask, stage1_center, types_one_hot)
