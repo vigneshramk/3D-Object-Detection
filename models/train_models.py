@@ -7,10 +7,6 @@ import Mother
 import loss
 import globalVariables as glb
 from hyperParams import hyp
-from logger import logger
-
-# Instantiate models
-net = Mother.Model()
 
 # Function for transforming interger labels to one-hot vectors
 def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
@@ -34,9 +30,6 @@ class Trainer:
         self.train_epoch_loss = []
         self.valid_loss = []
         self.metrics = {}
-        self.logger = logger()
-        self.log=self.logger.log
-        self.plot=self.logger.plot      #expects array,label,epoch or array,label
             
     def save_checkpoint(self, train_loss, valid_loss, fname_model = "Train_v1.pth", fname_hyp = "Hyp_v1.pth"):
         save_dict = {"epoch_idx": self.epoch + 1, "model_state_dict": self.model.state_state(), 
@@ -53,7 +46,7 @@ class Trainer:
             hyp = torch.load(fname_hyp)
 
     def run(self, train_loader, val_loader, epochs=num_epochs):
-        self.log("Start Training...")
+        print("Start Training...")
         for epoch in range(epochs):
             for batch_num, (features, class_labels, labels_dict) in enumerate(train_loader):
                 self.optimizer.zero_grad()
@@ -86,7 +79,7 @@ class Trainer:
                 self.train_avg_loss.append(np.mean(self.train_batch_loss))
                 
                 if batch_num % 100 ==0:
-                    self.log("Gradient update: {0}, loss: {1:.8f}".format(self.log_counter+1, corner_loss.item()))
+                    print("Gradient update: {0}, loss: {1:.8f}".format(print_counter+1, corner_loss.item()))
             
             self.train_epoch_loss.append(self.train_avg_loss[-1])
 
@@ -112,4 +105,13 @@ class Trainer:
             # Saves entire history of train loss over batches & valid loss over epoch
             save_checkpoint(self, self.train_avg_loss, self.valid_loss[-1])
 
-            self.log("epoch:", epoch+1, "train avg loss:", round(train_epoch_loss[-1],4), "val loss:", round(valid_loss[-1],4))
+            print("epoch:", epoch+1, "train avg loss:", round(train_epoch_loss[-1],4), "val loss:", round(valid_loss[-1],4))
+
+
+# Instantiate models
+net = Mother.Model()
+AdamOptimizer = torch.optim.Adam(net.parameters(), lr=0.001)
+num_epochs = 1
+
+model_trainer = Trainer(net, AdamOptimizer)
+model_trainer.run((self, train_loader, val_loader, epochs=num_epochs)
