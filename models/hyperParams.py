@@ -7,4 +7,5 @@ hyp = {
 "optimizer_regularization": 1e-5,
 "model_fname": "Train_v1",
 "hyp_fname": "Hyp_v1",
+"hyp_freq": 10
 }

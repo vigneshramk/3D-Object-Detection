@@ -50,7 +50,7 @@ class Trainer:
         fname_hyp = hyp["hyp_fname"]+"ep"+str(self.epoch)+".txt"
 
         torch.save(save_dict, fname_model)    # Saves train params
-        np.save(fname_hyp, hyp)               # Saves hyperparams dictionary	
+        np.save(fname_hyp, hyp)               # Saves hyperparams dictionary    
 
     def load_checkpoint(self, fname_model, fname_hyp = None):
         load_dict = torch.load(fname_model)
@@ -69,6 +69,7 @@ class Trainer:
         for epoch in range(epochs):
             self.train_batch_loss = 0
             self.train_avg_loss = 0
+            valid_batch_loss = 0  # Resets valid loss for each epoch
 
             for batch_num, (features, class_labels, labels_dict) in enumerate(train_loader):
                 self.optimizer.zero_grad()
@@ -83,7 +84,7 @@ class Trainer:
                 # labels_dict = mask_label, center_label, heading_class_label, heading_residual_label, 
                 # size_class_label, size_residual_label, end_points
                 corner_loss = loss(logits, labels_dict['mask_label'], labels_dict['center_label'], 
-                				labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
+                                labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
                                 labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 
                 # Checks for loss exploding
@@ -103,26 +104,25 @@ class Trainer:
                 self.train_batch_loss.append(corner_loss.item())
                 self.train_avg_loss.append(np.mean(self.train_batch_loss))
                 
-                if batch_num % 100 ==0:
+                if batch_num % hyp["log_freq"] ==0:
                     self.log("Gradient update: {0}, loss: {1:.8f}".format(batch_num+1, corner_loss.item()))
             
             # Stores last entry in running average of batch losses as epoch loss
             self.train_epoch_loss.append(self.train_avg_loss[-1])
 
-            valid_batch_loss = 0  # Resets valid loss for each epoch
             for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
                 X_val = torch.FloatTensor(val_features)
                 X_val = X_val.cuda()
 
                 val_class_labels = one_hot_encoding(val_class_labels)
-                Y_val = torch.FloatTensor(val_class_labels.astype(np.float32))
+                Y_val = torch.FloatTensor(val_class_labels)
                 Y_val = Y_val.cuda()
 
-                logits, end_points = self.model(X_val, Y_val)
+                val_logits, val_end_points = self.model(X_val, Y_val)
                 # May want to sum losses and average in a way acc. to number of points rather than simple averaging
-                valid_batch_loss += loss(logits, labels_dict['mask_label'], labels_dict['center_label'], heading_class_label, heading_residual_label, 
-                                size_class_label, size_residual_label, end_points)
-            
+                valid_batch_loss += loss(val_logits, labels_dict['mask_label'], labels_dict['center_label'], 
+                                        labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
+                                        labels_dict['size_class_label'], labels_dict['size_residual_label'], val_end_points)
             # Averages valid loss
             self.valid_loss.append(valid_batch_loss/(batch_idx+1))
 
