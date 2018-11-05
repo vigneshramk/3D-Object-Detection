@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 class logger:
 	self.fname = "log_{}.txt".format(time.time())
-	self.handle = open(self.fname,'wb')
+	self.handle = open(self.fname,'wb',buffering=0)
 	self.track_stats = {}
 	self.current_epoch = -1
 
