@@ -150,9 +150,32 @@ class CornerLoss_sunrgbd(nn.Module):
                 heading_residual_label, size_class_label, size_residual_label,
                 end_points, reg_weight=0.001):
         """ logits: BxNxC,
-            mask_label: BxN, """
+            mask_label: BxN,
+            center_label: Bx3
+            heading_class_label: B
+            heading_residual_label: B
+            size_class_label: B
+            size_residual_label: Bx3
+        """
+        B = logits.size(0)
+        N = logits.size(1)
 
-        batch_size = logits.size(0)
+        assert logits.size(2) == 2
+
+        assert mask_label.size(0) == B
+        assert mask_label.size(1) == N
+
+        assert center_label.size(0) == B
+        assert center_label.size(1) == 3
+
+        assert heading_class_label.size(0) == B
+
+        assert heading_residual_label.size(0) == B
+
+        assert size_class_label.size(0) == B
+
+        assert size_residual_label.size(0) == B
+        assert size_residual_label.size(1) == 3
 
         # sparse softmax cross entropy is used
         mask_loss = fn.cross_entropy(torch.transpose(logits, 1, 2), mask_label.long())
@@ -165,6 +188,9 @@ class CornerLoss_sunrgbd(nn.Module):
         heading_class_loss = fn.cross_entropy(end_points['heading_scores'], heading_class_label.long())
 
         hcls_onehot = make_onehot(heading_class_label, NUM_HEADING_BIN) # BxNUM_HEADING_BIN
+        assert hcls_onehot.size(0) == B
+        assert hcls_onehot.size(1) == NUM_HEADING_BIN
+
         heading_residual_normalized_label = heading_residual_label / (np.pi/NUM_HEADING_BIN)
         heading_loss_input = torch.sum(end_points['heading_residuals_normalized']*hcls_onehot, dim=1)
         heading_residual_normalized_loss = fn.smooth_l1_loss(heading_loss_input, heading_residual_normalized_label)
@@ -172,11 +198,27 @@ class CornerLoss_sunrgbd(nn.Module):
         size_class_loss = fn.cross_entropy(end_points['size_scores'], size_class_label.long())
 
         scls_one_hot = make_onehot(size_class_label, NUM_SIZE_CLUSTER) # BxNUM_SIZE_CLUSTER
+        assert scls_one_hot.size(0) == B
+        assert scls_one_hot.size(1) == NUM_SIZE_CLUSTER
+
         scls_one_hot_tiled = torch.unsqueeze(scls_one_hot, 2).repeat(1, 1, 3) # BxNUM_SIZE_CLUSTERx3
+        assert scls_one_hot_tiled.size(0) == B
+        assert scls_one_hot_tiled.size(1) == NUM_SIZE_CLUSTER
+        assert scls_one_hot_tiled.size(2) == 3
+
         predicted_size_residual_normalized = torch.sum(end_points['size_residuals_normalized']*scls_one_hot_tiled, dim=1) # Bx3
+        assert predicted_size_residual_normalized.size(0) == B
+        assert predicted_size_residual_normalized.size(1) == 3
 
         mean_size_arr_expand = torch.unsqueeze(torch.from_numpy(mean_size_arr), 0).float() # 1xNUM_SIZE_CLUSTERx3
+        assert mean_size_arr_expand.size(0) == 1
+        assert mean_size_arr_expand.size(1) == NUM_SIZE_CLUSTER
+        assert mean_size_arr_expand.size(2) == 3
+
         mean_size_label = torch.sum(scls_one_hot_tiled * mean_size_arr_expand, dim=1) # Bx3
+        assert mean_size_label.size(0) == B
+        assert mean_size_label.size(1) == 3
+
         size_residual_label_normalized = size_residual_label / mean_size_label
         size_residual_normalized_loss = fn.smooth_l1_loss(predicted_size_residual_normalized, size_residual_label_normalized)
 
@@ -191,11 +233,30 @@ class CornerLoss_sunrgbd(nn.Module):
         # Compute BOX3D corners
         corners_3d = get_box3d_corners(end_points['center'], end_points['heading_residuals'],
                                        end_points['size_residuals']) # (B, NH, NS, 8, 3)
+        assert corners_3d.size(0) == B
+        assert corners_3d.size(1) == NUM_HEADING_BIN
+        assert corners_3d.size(2) == NUM_SIZE_CLUSTER
+        assert corners_3d.size(3) == 8
+        assert corners_3d.size(4) == 3
+
         gt_mask = torch.unsqueeze(hcls_onehot, 2).repeat(1, 1, NUM_SIZE_CLUSTER) * \
                   torch.unsqueeze(scls_one_hot, 1).repeat(1, NUM_HEADING_BIN, 1) # (B, NH, NS)
+        assert gt_mask.size(0) == B
+        assert gt_mask.size(1) == NUM_HEADING_BIN
+        assert gt_mask.size(2) == NUM_SIZE_CLUSTER
+
         corners_3d_pred = torch.sum(torch.unsqueeze(torch.unsqueeze(gt_mask, -1), -1).float() * corners_3d, dim=(1, 2)) # (B, 8, 3)
+        assert corners_3d_pred.size(0) == B
+        assert corners_3d_pred.size(1) == 8
+        assert corners_3d_pred.size(2) == 3
+
         heading_bin_centers = torch.from_numpy(np.arange(0, 2*np.pi, 2*np.pi/NUM_HEADING_BIN)).float() # (NH, )
+        assert heading_bin_centers.size(0) == NUM_HEADING_BIN
+
         heading_label = torch.unsqueeze(heading_residual_label, 1) + torch.unsqueeze(heading_bin_centers, 0) # (B, NH)
+        assert heading_label.size(0) == B
+        assert heading_label.size(1) == NUM_HEADING_BIN
+
         heading_label = torch.sum(hcls_onehot.float() * heading_label, dim=1)
 
         mean_sizes = torch.unsqueeze(torch.from_numpy(mean_size_arr).float(), 0) # (1, NS, 3)
@@ -203,6 +264,9 @@ class CornerLoss_sunrgbd(nn.Module):
         size_label = torch.sum(torch.unsqueeze(scls_one_hot.float(), -1)*size_label, dim=1) # (B, 3)
         corners_3d_gt = get_box3d_corners_helper(center_label, heading_label, size_label) # (B, 8, 3)
         corners_3d_gt_flip = get_box3d_corners_helper(center_label, heading_label+np.pi, size_label) # (B, 8, 3)
+        assert corners_3d_gt.size(0) == B and corners_3d_gt_flip.size(0) == B
+        assert corners_3d_gt.size(1) == 8 and corners_3d_gt_flip.size(1) == 8
+        assert corners_3d_gt.size(2) == 3 and corners_3d_gt_flip.size(2) == 3
 
         corners_loss = torch.min(fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt), fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt_flip))
 
