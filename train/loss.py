@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as fn
 import numpy as np
 import globalVariables as glb
+from scipy.spatial import ConvexHull
 
 NUM_HEADING_BIN = glb.NUM_HEADING_BIN
 NUM_SIZE_CLUSTER = glb.NUM_SIZE_CLUSTER
@@ -224,11 +225,11 @@ class CornerLoss_sunrgbd(nn.Module):
 
         # TODO: Have to add this in computational graph
         # Compute IOU 3D
-#        iou2ds, iou3ds = self.compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
-#                                                end_points['size_scores'], end_points['size_residuals'], center_label, heading_class_label,
-#                                                heading_residual_label, size_class_label, size_residual_label)
-#        end_points['iou2ds'] = iou2ds
-#        end_points['iou3ds'] = iou3ds
+        iou2ds, iou3ds = self.compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
+                                                end_points['size_scores'], end_points['size_residuals'], center_label, heading_class_label,
+                                                heading_residual_label, size_class_label, size_residual_label)
+        end_points['iou2ds'] = iou2ds
+        end_points['iou3ds'] = iou3ds
 
         # Compute BOX3D corners
         corners_3d = get_box3d_corners(end_points['center'], end_points['heading_residuals'],
@@ -293,22 +294,158 @@ class CornerLoss_sunrgbd(nn.Module):
         '''
         batch_size = heading_logits.shape[0]
         heading_class = torch.argmax(heading_logits, 1) # B
-        heading_residual = np.array([heading_residuals[i, heading_class[i]] for i in range(batch_size)]) # B,
+        heading_residual = torch.tensor([heading_residuals[i, heading_class[i]] for i in range(batch_size)]) # B,
         size_class = torch.argmax(size_logits, 1) # B
-        size_residual = np.vstack([size_residuals[i, size_class[i],:] for i in range(batch_size)])
+        size_residual = torch.stack([size_residuals[i, size_class[i],:] for i in range(batch_size)], dim=0)
 
         iou2d_list = []
         iou3d_list = []
         for i in range(batch_size):
-            heading_angle = class2angle(heading_class[i], heading_residual[i], NUM_HEADING_BIN)
-            box_size = class2size(size_class[i], size_residual[i])
-            corners_3d = get_3d_box(box_size, heading_angle, center_pred[i])
+            heading_angle = self.class2angle(heading_class[i], heading_residual[i], NUM_HEADING_BIN)
+            box_size = self.class2size(size_class[i], size_residual[i])
+            corners_3d = self.get_3d_box(box_size, heading_angle, center_pred[i])
 
-            heading_angle_label = class2angle(heading_class_label[i], heading_residual_label[i], NUM_HEADING_BIN)
-            box_size_label = class2size(size_class_label[i], size_residual_label[i])
-            corners_3d_label = get_3d_box(box_size_label, heading_angle_label, center_label[i])
+            heading_angle_label = self.class2angle(heading_class_label[i], heading_residual_label[i], NUM_HEADING_BIN)
+            box_size_label = self.class2size(size_class_label[i], size_residual_label[i])
+            corners_3d_label = self.get_3d_box(box_size_label, heading_angle_label, center_label[i])
 
-            iou_3d, iou_2d = box3d_iou(corners_3d, corners_3d_label)
+            iou_3d, iou_2d = self.box3d_iou(corners_3d, corners_3d_label)
             iou3d_list.append(iou_3d)
             iou2d_list.append(iou_2d)
         return np.array(iou2d_list, dtype=np.float32), np.array(iou3d_list, dtype=np.float32)
+
+    def class2angle(self, pred_cls, residual, num_class, to_label_format=True):
+        ''' Inverse function to angle2class '''
+        angle_per_class = 2*np.pi/float(num_class)
+        angle_center = pred_cls * angle_per_class
+        angle = angle_center.float() + residual
+        if to_label_format and angle>np.pi:
+            angle = angle - 2*np.pi
+        return angle
+
+    def class2size(self, pred_cls, residual):
+        mean_size = glb.type_mean_size[glb.class2type[pred_cls.item()]]
+        return torch.from_numpy(mean_size).float() + residual
+
+    def get_3d_box(self, box_size, heading_angle, center):
+        ''' box_size is array(l,w,h), heading_angle is radius clockwise from pos x axis, center is xyz of box center
+            output (8,3) array for 3D box cornders
+            Similar to utils/compute_orientation_3d
+        '''
+        R = torch.from_numpy(self.roty(heading_angle)).float()
+        l, w, h = box_size
+        x_corners = torch.stack([l/2,l/2,-l/2,-l/2,l/2,l/2,-l/2,-l/2], dim=0);
+        y_corners = torch.stack([h/2,h/2,h/2,h/2,-h/2,-h/2,-h/2,-h/2], dim=0);
+        z_corners = torch.stack([w/2,-w/2,-w/2,w/2,w/2,-w/2,-w/2,w/2], dim=0);
+        corners_3d = torch.matmul(R, torch.stack([x_corners,y_corners,z_corners], dim=0))
+        corners_3d[0,:] = corners_3d[0,:] + center[0];
+        corners_3d[1,:] = corners_3d[1,:] + center[1];
+        corners_3d[2,:] = corners_3d[2,:] + center[2];
+        corners_3d = corners_3d.t()
+        return corners_3d
+
+    def box3d_iou(self, corners1, corners2):
+       ''' Compute 3D bounding box IoU.
+
+       Input:
+         corners1: numpy array (8,3), assume up direction is negative Y
+         corners2: numpy array (8,3), assume up direction is negative Y
+       Output:
+         iou: 3D bounding box IoU
+         iou_2d: bird's eye view 2D bounding box IoU
+      '''
+       # corner points are in counter clockwise order
+       rect1 = [(corners1[i,0], corners1[i,2]) for i in range(3,-1,-1)]
+       rect2 = [(corners2[i,0], corners2[i,2]) for i in range(3,-1,-1)]
+       area1 = self.poly_area(torch.stack(rect1[:][0]), torch.stack(rect1[:][1]))
+       area2 = self.poly_area(torch.stack(rect2[:][0]), torch.stack(rect2[:][1]))
+       inter, inter_area = self.convex_hull_intersection(rect1, rect2)
+       iou_2d = inter_area/(area1+area2-inter_area)
+       ymax = torch.min(corners1[0,1], corners2[0,1])
+       ymin = torch.max(corners1[4,1], corners2[4,1])
+       inter_vol = inter_area * torch.max(torch.tensor([0.0]), ymax-ymin)
+       vol1 = self.box3d_vol(corners1)
+       vol2 = self.box3d_vol(corners2)
+       iou = inter_vol / (vol1 + vol2 - inter_vol)
+       return iou, iou_2d
+
+    def box3d_vol(self, corners):
+        ''' corners: (8,3) no assumption on axis direction '''
+        a = torch.sqrt(torch.sum((corners[0,:] - corners[1,:])**2))
+        b = torch.sqrt(torch.sum((corners[1,:] - corners[2,:])**2))
+        c = torch.sqrt(torch.sum((corners[0,:] - corners[4,:])**2))
+        return a*b*c
+
+    def roty(self, t):
+       """Rotation about the y-axis."""
+       c = np.cos(t)
+       s = np.sin(t)
+       return np.array([[c,  0,  s],
+                        [0,  1,  0],
+                        [-s, 0,  c]])
+
+
+    def polygon_clip(self, subjectPolygon, clipPolygon):
+        """ Clip a polygon with another polygon.
+
+        Ref: https://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping#Python
+
+        Args:
+            subjectPolygon: a list of (x,y) 2d points, any polygon.
+            clipPolygon: a list of (x,y) 2d points, has to be *convex*
+        Note:
+            **points have to be counter-clockwise ordered**
+
+        Return:
+            a list of (x,y) vertex point for the intersection polygon.
+        """
+        def inside(p):
+            return(cp2[0]-cp1[0])*(p[1]-cp1[1]) > (cp2[1]-cp1[1])*(p[0]-cp1[0])
+
+        def computeIntersection():
+            dc = [ cp1[0] - cp2[0], cp1[1] - cp2[1] ]
+            dp = [ s[0] - e[0], s[1] - e[1] ]
+            n1 = cp1[0] * cp2[1] - cp1[1] * cp2[0]
+            n2 = s[0] * e[1] - s[1] * e[0]
+            n3 = 1.0 / (dc[0] * dp[1] - dc[1] * dp[0])
+            return [(n1*dp[0] - n2*dc[0]) * n3, (n1*dp[1] - n2*dc[1]) * n3]
+
+        outputList = subjectPolygon
+        cp1 = clipPolygon[-1]
+
+        for clipVertex in clipPolygon:
+            cp2 = clipVertex
+            inputList = outputList
+            outputList = []
+            s = inputList[-1]
+
+            for subjectVertex in inputList:
+                e = subjectVertex
+                if inside(e):
+                    if not inside(s):
+                        outputList.append(computeIntersection())
+                    outputList.append(e)
+                elif inside(s):
+                    outputList.append(computeIntersection())
+                s = e
+            cp1 = cp2
+            if len(outputList) == 0:
+                return None
+        return(outputList)
+
+    def convex_hull_intersection(self, p1, p2):
+        """ Compute area of two convex hull's intersection area.
+            p1,p2 are a list of (x,y) tuples of hull vertices.
+            return a list of (x,y) for the intersection and its volume
+        """
+        inter_p = self.polygon_clip(p1,p2)
+        if inter_p is not None:
+            hull_inter = ConvexHull(inter_p)
+            return inter_p, hull_inter.volume
+        else:
+            return None, 0.0
+
+    def poly_area(self, x, y):
+        """ Ref: http://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates """
+        #return 0.5*torch.abs(torch.dot(x, np.roll(y,1)) - torch.dot(y, np.roll(x,1)))
+        return 0.5*torch.abs(torch.dot(x, torch.stack([y[-1], y[0]])) - torch.dot(y, torch.stack([x[-1], x[0]])))
