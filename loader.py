@@ -55,7 +55,9 @@ def load_data(SUN_PATH, SUN_FILE):
 
     class_list = [type2class[l] for l in type_list]
     frustum_list = get_frustum(input_list)
-    return frustum_list,class_list,label_list,box3d_list
+
+    return id_list,box2d_list,box3d_list,frustum_list,label_list,type_list,heading_list,box3d_size_list,frustum_angle_list
+    # return frustum_list,class_list,label_list,box3d_list
 
 # Testing the loader
 def test_loader():
