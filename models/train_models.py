@@ -36,38 +36,55 @@ class Trainer:
         self.plot = self.logger.plot        #array,label,epoch or array,label
         self.log("Hyperparameters : {}".format(hyp))
 
-    def save_checkpoint(self, train_loss, valid_loss, fname_model = "Train_v1.pth", fname_hyp = "Hyp_v1.pth"):
-        save_dict = {"epoch_idx": self.epoch + 1, "model_state_dict": self.model.state_state(), 
-        "optim_state_dict":self.optimizer.state_dict(), "training_loss":train_loss, "Val_loss":valid_loss}
-        torch.save(save_dict, fname_model)
-        torch.save(hyp, fname_hyp)
+    def save_checkpoint(self):
+        save_dict = {
+        "epoch_idx": self.epoch + 1, 
+        "model_state_dict": self.model.state_dict(), 
+        "optim_state_dict":self.optimizer.state_dict(), 
+        "training_loss":self.train_avg_loss,
+        "training_epoch_loss": self.train_epoch_loss,
+        "val_loss":self.valid_loss
+        }
+
+        fname_model = hyp["model_fname"]+"ep"+str(self.epoch)+".pth"
+        fname_hyp = hyp["hyp_fname"]+"ep"+str(self.epoch)+".txt"
+
+        torch.save(save_dict, fname_model)    # Saves train params
+        np.save(fname_hyp, hyp)               # Saves hyperparams dictionary	
 
     def load_checkpoint(self, fname_model, fname_hyp = None):
         load_dict = torch.load(fname_model)
+        self.epoch = load_dict['epoch_idx']
+        self.train_epoch_loss = load_dict['training_epoch_loss']
+        self.valid_loss = load_dict['val_loss']
         self.model.load_state_dict(load_dict['model_state_dict'])
         self.optimizer.load_state_dict(load_dict['optim_state_dict'])
 
         if (fname_hyp is not None):
-            hyp = torch.load(fname_hyp)
+            hyp = np.load(fname_hyp)[()]    # Loads dictionary from npy file
             self.log("Hyperparameters loaded from checkpoint as {}".format(hyp))
 
-    def run(self, train_loader, val_loader, epochs=num_epochs):
+    def run(self, train_loader, val_loader, epochs=hyp["num_epochs"]):
         self.log("Start Training...")
         for epoch in range(epochs):
+            self.train_batch_loss = 0
+            self.train_avg_loss = 0
+
             for batch_num, (features, class_labels, labels_dict) in enumerate(train_loader):
                 self.optimizer.zero_grad()
                 X = torch.FloatTensor(features).requires_grad_()
                 X = X.cuda()
                 class_labels = one_hot_encoding(class_labels)
-                Y = torch.FloatTensor(class_labels.astype(np.float32))
+                Y = torch.FloatTensor(class_labels)
                 Y = Y.cuda()
 
                 logits, end_points = self.model(X, Y)
                 
                 # labels_dict = mask_label, center_label, heading_class_label, heading_residual_label, 
                 # size_class_label, size_residual_label, end_points
-                corner_loss = loss(logits, labels_dict['mask_label'], labels_dict['center_label'], heading_class_label, heading_residual_label, 
-                                size_class_label, size_residual_label, end_points)
+                corner_loss = loss(logits, labels_dict['mask_label'], labels_dict['center_label'], 
+                				labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
+                                labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 
                 # Checks for loss exploding
                 if math.isnan(corner_loss):
@@ -82,15 +99,17 @@ class Trainer:
                 
                 self.optimizer.step()
                 
+                # Keeps track of batch loss and running mean of batch losses
                 self.train_batch_loss.append(corner_loss.item())
                 self.train_avg_loss.append(np.mean(self.train_batch_loss))
                 
                 if batch_num % 100 ==0:
-                    self.log("Gradient update: {0}, loss: {1:.8f}".format(self.log_counter+1, corner_loss.item()))
+                    self.log("Gradient update: {0}, loss: {1:.8f}".format(batch_num+1, corner_loss.item()))
             
+            # Stores last entry in running average of batch losses as epoch loss
             self.train_epoch_loss.append(self.train_avg_loss[-1])
 
-            valid_loss = 0  # Resets valid loss for each epoch
+            valid_batch_loss = 0  # Resets valid loss for each epoch
             for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
                 X_val = torch.FloatTensor(val_features)
                 X_val = X_val.cuda()
@@ -101,24 +120,23 @@ class Trainer:
 
                 logits, end_points = self.model(X_val, Y_val)
                 # May want to sum losses and average in a way acc. to number of points rather than simple averaging
-                valid_loss += loss(logits, labels_dict['mask_label'], labels_dict['center_label'], heading_class_label, heading_residual_label, 
+                valid_batch_loss += loss(logits, labels_dict['mask_label'], labels_dict['center_label'], heading_class_label, heading_residual_label, 
                                 size_class_label, size_residual_label, end_points)
             
             # Averages valid loss
-            self.valid_loss.append(valid_loss/batch_idx)
+            self.valid_loss.append(valid_batch_loss/(batch_idx+1))
 
             self.metrics["train_loss_{}".format(epoch)] = self.train_epoch_loss[-1]
             self.metrics["valid_loss_{}".format(epoch)] = self.valid_loss[-1]
             # Saves entire history of train loss over batches & valid loss over epoch
-            save_checkpoint(self, self.train_avg_loss, self.valid_loss[-1])
+            self.save_checkpoint()
 
             self.log("epoch:", epoch+1, "train avg loss:", round(train_epoch_loss[-1],4), "val loss:", round(valid_loss[-1],4))
 
 
-# Instantiate models
-net = Mother.Model()
-AdamOptimizer = torch.optim.Adam(net.parameters(), lr=0.001)
-num_epochs = 1
+# # Instantiate models
+# net = Mother.Model()
+# AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optimizer_regularization'])
 
-model_trainer = Trainer(net, AdamOptimizer)
-model_trainer.run((self, train_loader, val_loader, epochs=num_epochs)
+# model_trainer = Trainer(net, AdamOptimizer)
+# model_trainer.run((self, train_loader, val_loader, epochs=hyp['num_epochs'])
