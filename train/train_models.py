@@ -100,9 +100,9 @@ class Trainer:
                 if math.isnan(corner_loss.item()):
                   #  self.save_checkpoint("fault.pth","fault.txt")
                     for key in end_points.keys():
-                        if torch.isnan(end_points[key]):
+                        if torch.isnan(end_points[key]).any():
                             sys.log("Loss exploded @{}. Dumped:{}".format(key,end_points[key]))
-                    if torch.isnan(logits):
+                    if torch.isnan(logits).any():
                         sys.log("Loss exploded @logits. Dumped:{}".format(logits))
                     sys.exit("Loss exploded!")
 
