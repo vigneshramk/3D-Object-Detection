@@ -133,11 +133,11 @@ class Trainer:
                         self.log("Loss exploded @logits. Dumped:{}".format(logits))
                     sys.exit("Loss exploded!")
 
+                corner_loss.backward()
                 # Implements gradient clipping if desired
                 if hyp["grad_clip"]!=0:
                     nn.utils.clip_grad_value_(self.model.parameters(), hyp["grad_clip"])
 
-                corner_loss.backward()
                 
                 self.optimizer.step()
                 
