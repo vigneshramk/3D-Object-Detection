@@ -55,34 +55,15 @@ class TNet(nn.Module):
 
 
     def forward(self, point_cloud, one_hot_vec, logits):
-        if torch.isnan(logits).any():
-            print('TNet: logits is NaN')
-
         num_point = point_cloud.size(1)
         mask = logits[0:, 0:, 0:1] < logits[0:, 0:, 1:2] # BxNx1
-        print(logits.shape,mask.shape)
-        if torch.isnan(mask).any():
-            print('Mask is Nan')
         mask_count = torch.sum(mask, dim=1, keepdim=True).repeat(1, 1, 3) # Bx1x3
         point_cloud_xyz = point_cloud[0:, 0:, 0:3] # BxNx3
-        if torch.isnan(mask_count).any():
-            print('Mask count is Nan')
-        if torch.isnan(point_cloud_xyz).any():
-            print('point cloud xyz is Nan')
-
 
         mask_xyz_mean = torch.sum(mask.float().repeat(1, 1, 3)*point_cloud_xyz, dim=1, keepdim=True) # Bx1X3
-        if torch.isnan(mask_xyz_mean).any():
-            print('Mask xyz mean1 is Nan')
-
         mask_xyz_mean = mask_xyz_mean/torch.max(mask_count, torch.ones_like(mask_count))[0].float().unsqueeze(1) # Bx1x3
-        if torch.isnan(mask_xyz_mean.repeat(1, num_point, 1)).any():
-            print('Mask xyz mean2  repeat is Nan',mask_xyz_mean)
 
-        print(num_point)
         point_cloud_xyz_stage1 = point_cloud_xyz - mask_xyz_mean.repeat(1, num_point, 1)
-        if torch.isnan(point_cloud_xyz_stage1).any():
-            print('TNet: point_cloud_xyz_stage1 is NaN')
 
         # ---- Regress 1st stage center ----
         x = point_cloud_xyz_stage1.permute(0, 2, 1)
@@ -91,20 +72,12 @@ class TNet(nn.Module):
         # TODO: Input dimension for TNet is required
         x = self.conv(x)
         x = nn.functional.max_pool2d(x, (num_point, 1))
-        if torch.isnan(x).any():
-            print('TNet: x is NaN after max pool 2d')
 
         x = x.view(x.size(0), -1)
         x = torch.cat((x, one_hot_vec), dim=1)
         stage1_center = self.fc(x)
-        if torch.isnan(stage1_center).any():
-            print('TNet: stage1_center is NaN after fully connected layer.')
 
         stage1_center = stage1_center + torch.squeeze(mask_xyz_mean, 1)
 
-        if torch.isnan(stage1_center).any():
-            print('TNet: stage1_center is NaN')
-
         return point_cloud_xyz, stage1_center, mask
-
 
