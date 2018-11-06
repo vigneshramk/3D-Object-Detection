@@ -121,7 +121,7 @@ class CornerLoss(nn.Module):
                                                                                 end_points['size_residuals'])
         gt_mask = torch.unsqueeze(hcls_onehot, 2).repeat(1, 1, NUM_SIZE_CLUSTER) * \
                             torch.unsqueeze(hcls_onehot, 1).repeat(1, NUM_HEADING_BIN, 1)
-        corners_3d_pred = torch_sum(torch.unsqueeze(torch.unsqueeze(gt_mask, -1), -1).float() * corners_3d, dim=(1, 2))
+        corners_3d_pred = torch.sum(torch.sum(torch.unsqueeze(torch.unsqueeze(gt_mask, -1), -1).float() * corners_3d, dim=1), dim=1)
 
         heading_bin_centers = torch.from_numpy(np.arange(0, 2*np.pi, 2*np.pi/NUM_HEADING_BIN)).float()
         heading_label = torch.unsqueeze(heading_residual_label, 1) + torch.unsqueeze(heading_bin_centers, 0)
@@ -246,7 +246,7 @@ class CornerLoss_sunrgbd(nn.Module):
         assert gt_mask.size(1) == NUM_HEADING_BIN
         assert gt_mask.size(2) == NUM_SIZE_CLUSTER
 
-        corners_3d_pred = torch.sum(torch.unsqueeze(torch.unsqueeze(gt_mask, -1), -1).float() * corners_3d, dim=(1, 2)) # (B, 8, 3)
+        corners_3d_pred = torch.sum(torch.sum(torch.unsqueeze(torch.unsqueeze(gt_mask, -1), -1).float() * corners_3d, dim=1),dim=1) # (B, 8, 3)
         assert corners_3d_pred.size(0) == B
         assert corners_3d_pred.size(1) == 8
         assert corners_3d_pred.size(2) == 3

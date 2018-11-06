@@ -31,7 +31,7 @@ def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
 # Training cradle
 class Trainer:
     def __init__(self, model, optimizer):
-        self.model = model
+        self.model = model.cuda()
         if hyp["parallel"]:
             self.model = nn.DataParallel(self.model)
         self.optimizer = optimizer
@@ -91,7 +91,7 @@ class Trainer:
 
     def run(self, train_loader, val_loader, epochs=hyp["num_epochs"]):
         self.model.train()
-        torch.autograd.set_detect_anomaly(True)
+        #torch.autograd.set_detect_anomaly(True)
         lossfn = CornerLoss_sunrgbd()
         self.log("Start Training...")
         niter = 0
@@ -154,7 +154,7 @@ class Trainer:
             #print("Training for %d epoch completed", %epoch)
             
             self.model.eval()
-            torch.autograd.set_detect_anomaly(False)
+            #torch.autograd.set_detect_anomaly(False)
             for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
                 X_val = torch.FloatTensor(val_features)
                 X_val = X_val.cuda()

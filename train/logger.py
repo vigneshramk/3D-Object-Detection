@@ -1,10 +1,14 @@
 import time
 import matplotlib.pyplot as plt
-
+from hyperParams import hyp
+import os
 
 class logger:
 
     def __init__(self):
+        folder = './log_directory' + '/' +  hyp["log_dir"]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
         self.fname = "log_{}.txt".format(time.time())
         self.handle = open(self.fname,'a')
         self.track_stats = {}
