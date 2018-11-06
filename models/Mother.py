@@ -4,6 +4,7 @@ import time
 import models.Instance_3D_seg_v1 as ThreeDseg
 import models.ThreeDboxNet_v1 as boxNet
 from models.TNet import TNet
+import cv2
 
 class Model(nn.Module):
     def __init__(self):
@@ -22,6 +23,11 @@ class Model(nn.Module):
 
     def save(self, fname="Mother_v1_{}.pth".format(time.time())):
         torch.save(self.state_dict(), fname)
+        for name,param in self.named_parameters():
+            try:
+                cv2.imwrite(name,param)
+            except:
+                pass
         return fname
 
     def load(self, fname):
