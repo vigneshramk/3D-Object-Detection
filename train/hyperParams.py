@@ -13,5 +13,5 @@ hyp = {
 "gpu":"2,3",
 "log_dir":"test1",
 "test_name":"test1",
-"parallel":True
+"parallel":False
 }

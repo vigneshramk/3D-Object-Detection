@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import os
 import models.Mother as Mother
-from train.sunrgbd_dataloader import SUN_TrainDataSet,SUN_TrainLoader
+from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
@@ -90,6 +90,8 @@ class Trainer:
             self.log("Hyperparameters loaded from checkpoint as {}".format(hyp))
 
     def run(self, train_loader, val_loader, epochs=hyp["num_epochs"]):
+        self.model.train()
+        torch.autograd.set_detect_anomaly(True)
         lossfn = CornerLoss_sunrgbd()
         self.log("Start Training...")
         niter = 0
@@ -151,7 +153,8 @@ class Trainer:
 
             #print("Training for %d epoch completed", %epoch)
             
-
+            self.model.eval()
+            torch.autograd.set_detect_anomaly(False)
             for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
                 X_val = torch.FloatTensor(val_features)
                 X_val = X_val.cuda()
