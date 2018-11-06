@@ -8,10 +8,6 @@ import models.Mother as Mother
 import train.sunrgbd_dataloader
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
-<<<<<<< 8fc99769f074d99af381c9c7f777afdfb5819b3a
-from train.hyperParams import hyp
-from train.logger import logger
-=======
 from hyperParams import hyp
 from logger import logger
 from tensorboardX import SummaryWriter
@@ -19,7 +15,7 @@ from tensorboardX import SummaryWriter
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
 use_cuda = torch.cuda.is_available()
 print('Cuda')
->>>>>>> Adding tensorboard
+
 
 # Function for transforming interger labels to one-hot vectors
 def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
