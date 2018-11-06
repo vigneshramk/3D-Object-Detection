@@ -5,11 +5,11 @@ import torch
 import torch.nn as nn
 
 import models.Mother as Mother
-import sunrgbd_dataloader
+import train.sunrgbd_dataloader
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
-from hyperParams import hyp
-from logger import logger
+from train.hyperParams import hyp
+from train.logger import logger
 
 # Function for transforming interger labels to one-hot vectors
 def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
@@ -67,7 +67,6 @@ class Trainer:
             self.log("Hyperparameters loaded from checkpoint as {}".format(hyp))
 
     def run(self, train_loader, val_loader, epochs=hyp["num_epochs"]):
-        self.model=self.model.cuda()
         lossfn = CornerLoss_sunrgbd()
         self.log("Start Training...")
         for epoch in range(epochs):
@@ -84,10 +83,10 @@ class Trainer:
                 Y = Y.cuda()
                      
                 logits, end_points = self.model(X, Y)
-                # labels_dict = mask_label, center_label, heading_class_label, heading_residual_label, 
-                # size_class_label, size_residual_label, end_points
+
                 for key in labels_dict.keys():
                     labels_dict[key]=labels_dict[key].cuda()
+
                 corner_loss = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'], 
                                 labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
                                 labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
@@ -134,10 +133,14 @@ class Trainer:
                 Y_val = Y_val.cuda()
 
                 val_logits, val_end_points = self.model(X_val, Y_val)
-                # May want to sum losses and average in a way acc. to number of points rather than simple averaging
-                valid_batch_loss += loss(val_logits, labels_dict['mask_label'], labels_dict['center_label'], 
-                                        labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
-                                        labels_dict['size_class_label'], labels_dict['size_residual_label'], val_end_points)
+
+                for key in val_labels_dict.keys():
+                    val_labels_dict[key]=val_labels_dict[key].cuda()
+
+                # May want to sum losses and average in a way acc. to number of points rather than simple averaging ?
+                valid_batch_loss += lossfn(val_logits, val_labels_dict['mask_label'], val_labels_dict['center_label'], 
+                                        val_labels_dict['heading_class_label'], val_labels_dict['heading_residual_label'], 
+                                        val_labels_dict['size_class_label'], val_labels_dict['size_residual_label'], val_end_points)
             # Averages valid loss
             self.valid_loss.append(valid_batch_loss/(batch_idx+1))
 
@@ -149,8 +152,11 @@ class Trainer:
             self.log("epoch:", epoch+1, "train avg loss:", round(train_epoch_loss[-1],4), "val loss:", round(valid_loss[-1],4))
             self.logger.close()
 
+
+# # Runs as a script when called
+# if __name__ == "__main__":
 # Instantiate models
-net = Mother.Model()
+net = Mother.Model().cuda()
 AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optim_reg'])
 
 model_trainer = Trainer(net, AdamOptimizer)
