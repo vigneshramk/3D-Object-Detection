@@ -3,9 +3,9 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
-
+import os
 import models.Mother as Mother
-import train.sunrgbd_dataloader
+from train.sunrgbd_dataloader import SUN_TrainDataSet,SUN_TrainLoader
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
@@ -149,7 +149,7 @@ class Trainer:
             self.train_epoch_loss.append(np.mean(self.train_batch_loss))
             self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),epoch)
 
-            print("Training for %d epoch completed", %epoch)
+            #print("Training for %d epoch completed", %epoch)
             
 
             for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
@@ -188,7 +188,7 @@ net = Mother.Model().cuda()
 AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optim_reg'])
 
 model_trainer = Trainer(net, AdamOptimizer)
-
+train_dataset = SUN_TrainDataSet(2048)
 train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
 val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
 model_trainer.run(train_loader, val_loader, epochs=hyp['num_epochs'])

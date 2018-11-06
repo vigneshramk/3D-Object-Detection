@@ -68,7 +68,7 @@ class InstanceSegNet(nn.Module):
           nn.init.xavier_uniform_(m.weight)
         else:
           nn.init.kaiming_uniform_(m.weight)
-        nn.init.zeros_(m.bias)
+        nn.init.constant_(m.bias,0)
 
       ### CHECK WITH TENSORFLOW INITIALIZATION
       # elif isinstance(m, nn.BatchNorm2d):
