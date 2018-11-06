@@ -63,7 +63,7 @@ class Trainer:
         "epoch_idx": self.epoch + 1, 
         "model_state_dict": self.model.state_dict(), 
         "optim_state_dict":self.optimizer.state_dict(), 
-        "training_loss":self.train_avg_loss,
+        #"training_loss":self.train_avg_loss,
         "training_epoch_loss": self.train_epoch_loss,
         # "val_loss":self.valid_loss
         }
@@ -182,8 +182,8 @@ class Trainer:
             # Saves entire history of train loss over batches & valid loss over epoch
             self.save_checkpoint()
 
-            self.log("epoch:", epoch+1, "train avg loss:", round(train_epoch_loss[-1],4), "val loss:", round(valid_loss[-1],4))
-            self.logger.close()
+            #self.log("epoch:", epoch+1, "train avg loss:", round(self.train_epoch_loss[-1],4))
+        self.logger.close()
 
 
 # # Runs as a script when called
