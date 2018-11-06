@@ -65,7 +65,7 @@ class Trainer:
         "optim_state_dict":self.optimizer.state_dict(), 
         "training_loss":self.train_avg_loss,
         "training_epoch_loss": self.train_epoch_loss,
-        "val_loss":self.valid_loss
+        # "val_loss":self.valid_loss
         }
 
         fname_model = hyp["model_fname"]+"ep"+str(self.epoch)+".pth"
@@ -81,7 +81,7 @@ class Trainer:
         load_dict = torch.load(fname_model)
         self.epoch = load_dict['epoch_idx']
         self.train_epoch_loss = load_dict['training_epoch_loss']
-        self.valid_loss = load_dict['val_loss']
+        # self.valid_loss = load_dict['val_loss']
         self.model.load_state_dict(load_dict['model_state_dict'])
         self.optimizer.load_state_dict(load_dict['optim_state_dict'])
 
@@ -153,30 +153,32 @@ class Trainer:
 
             #print("Training for %d epoch completed", %epoch)
             
-            self.model.eval()
-            #torch.autograd.set_detect_anomaly(False)
-            for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
-                X_val = torch.FloatTensor(val_features)
-                X_val = X_val.cuda()
+            if False:
 
-                val_class_labels = one_hot_encoding(val_class_labels)
-                Y_val = torch.FloatTensor(val_class_labels)
-                Y_val = Y_val.cuda()
+                self.model.eval()
+                #torch.autograd.set_detect_anomaly(False)
+                for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
+                    X_val = torch.FloatTensor(val_features)
+                    X_val = X_val.cuda()
 
-                val_logits, val_end_points = self.model(X_val, Y_val)
+                    val_class_labels = one_hot_encoding(val_class_labels)
+                    Y_val = torch.FloatTensor(val_class_labels)
+                    Y_val = Y_val.cuda()
 
-                for key in val_labels_dict.keys():
-                    val_labels_dict[key]=val_labels_dict[key].cuda()
+                    val_logits, val_end_points = self.model(X_val, Y_val)
 
-                # May want to sum losses and average in a way acc. to number of points rather than simple averaging ?
-                valid_batch_loss += lossfn(val_logits, val_labels_dict['mask_label'], val_labels_dict['center_label'], 
-                                        val_labels_dict['heading_class_label'], val_labels_dict['heading_residual_label'], 
-                                        val_labels_dict['size_class_label'], val_labels_dict['size_residual_label'], val_end_points)
-            # Averages valid loss
-            self.valid_loss.append(valid_batch_loss/(batch_idx+1))
+                    for key in val_labels_dict.keys():
+                        val_labels_dict[key]=val_labels_dict[key].cuda()
+
+                    # May want to sum losses and average in a way acc. to number of points rather than simple averaging ?
+                    valid_batch_loss += lossfn(val_logits, val_labels_dict['mask_label'], val_labels_dict['center_label'], 
+                                            val_labels_dict['heading_class_label'], val_labels_dict['heading_residual_label'], 
+                                            val_labels_dict['size_class_label'], val_labels_dict['size_residual_label'], val_end_points)
+                # Averages valid loss
+                self.valid_loss.append(valid_batch_loss/(batch_idx+1))
 
             self.metrics["train_loss_{}".format(epoch)] = self.train_epoch_loss[-1]
-            self.metrics["valid_loss_{}".format(epoch)] = self.valid_loss[-1]
+            # self.metrics["valid_loss_{}".format(epoch)] = self.valid_loss[-1]
             # Saves entire history of train loss over batches & valid loss over epoch
             self.save_checkpoint()
 
@@ -187,7 +189,7 @@ class Trainer:
 # # Runs as a script when called
 # if __name__ == "__main__":
 # Instantiate models
-net = Mother.Model().cuda()
+net = Mother.Model()
 AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optim_reg'])
 
 model_trainer = Trainer(net, AdamOptimizer)
