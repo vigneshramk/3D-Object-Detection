@@ -8,8 +8,18 @@ import models.Mother as Mother
 import train.sunrgbd_dataloader
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
+<<<<<<< 8fc99769f074d99af381c9c7f777afdfb5819b3a
 from train.hyperParams import hyp
 from train.logger import logger
+=======
+from hyperParams import hyp
+from logger import logger
+from tensorboardX import SummaryWriter
+
+os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
+use_cuda = torch.cuda.is_available()
+print('Cuda')
+>>>>>>> Adding tensorboard
 
 # Function for transforming interger labels to one-hot vectors
 def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
@@ -29,7 +39,6 @@ class Trainer:
         self.optimizer = optimizer
         self.epoch = 0
         self.train_batch_loss = []
-        self.train_avg_loss = []
         self.train_epoch_loss = []
         self.valid_loss = []
         self.metrics = {}
@@ -37,6 +46,19 @@ class Trainer:
         self.log=self.logger.log
         self.plot = self.logger.plot        #array,label,epoch or array,label
         self.log("Hyperparameters : {}".format(hyp))
+
+        self.log_dir = 'log_directory/' + hyp["log_dir"]
+        self.writer = SummaryWriter(self.log_dir)
+        
+        # Create the results directory
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+        
+        self.model_dir = '../results' + hyp["test_name"]
+        
+        # Create the results directory
+        if not os.path.exists(self.model_dir):
+            os.makedirs(self.model_dir)
 
     def save_checkpoint(self):
         save_dict = {
@@ -51,8 +73,11 @@ class Trainer:
         fname_model = hyp["model_fname"]+"ep"+str(self.epoch)+".pth"
         fname_hyp = hyp["hyp_fname"]+"ep"+str(self.epoch)+".txt"
 
-        torch.save(save_dict, fname_model)    # Saves train params
-        np.save(fname_hyp, hyp)               # Saves hyperparams dictionary    
+        file_save = self.model_dir + '/' + fname_model
+        np_save = self.model_dir + '/' + fname_hyp
+
+        torch.save(save_dict, file_save)    # Saves train params
+        np.save(np_save, hyp)               # Saves hyperparams dictionary    
 
     def load_checkpoint(self, fname_model, fname_hyp = None):
         load_dict = torch.load(fname_model)
@@ -69,9 +94,9 @@ class Trainer:
     def run(self, train_loader, val_loader, epochs=hyp["num_epochs"]):
         lossfn = CornerLoss_sunrgbd()
         self.log("Start Training...")
+        niter = 0
         for epoch in range(epochs):
             self.train_batch_loss = []
-            self.train_avg_loss = []
             valid_batch_loss = 0  # Resets valid loss for each epoch
 
             for batch_num, (features, class_labels, labels_dict) in enumerate(train_loader):
@@ -118,11 +143,16 @@ class Trainer:
                 
                 # Keeps track of batch loss and running mean of batch losses
                 self.train_batch_loss.append(corner_loss.item())
-                self.train_avg_loss.append(np.mean(self.train_batch_loss))
-                
-            
+
+                self.writer.add_scalar('data/iter_loss',corner_loss.item(),niter)
+                niter +=1
+
             # Stores last entry in running average of batch losses as epoch loss
-            self.train_epoch_loss.append(self.train_avg_loss[-1])
+            self.train_epoch_loss.append(np.mean(self.train_batch_loss))
+            self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),epoch)
+
+            print("Training for %d epoch completed", %epoch)
+            
 
             for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
                 X_val = torch.FloatTensor(val_features)
@@ -161,6 +191,7 @@ AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hy
 
 model_trainer = Trainer(net, AdamOptimizer)
 
-train_loader = sunrgbd_dataloader.dataloader()
-val_loader = sunrgbd_dataloader.dataloader()
+train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
 model_trainer.run(train_loader, val_loader, epochs=hyp['num_epochs'])
+
