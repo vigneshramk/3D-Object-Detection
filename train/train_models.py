@@ -36,6 +36,8 @@ def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
 class Trainer:
     def __init__(self, model, optimizer):
         self.model = model
+        if hyp["parallel"]:
+            self.model = nn.DataParallel(self.model)
         self.optimizer = optimizer
         self.epoch = 0
         self.train_batch_loss = []
