@@ -112,16 +112,30 @@ class Trainer:
                 for key in labels_dict.keys():
                     labels_dict[key]=labels_dict[key].cuda()
 
-                corner_loss = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'], 
+                total_loss, mask_loss,center_loss,heading_class_loss,size_class_loss,
+                heading_residual_normalized_loss,size_residual_normalized_loss,stage1_center_loss,corner_loss = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'], 
                                 labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
                                 labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 
+                
+                # Plot the individual losses
+
+                self.writer.add_scalar('data/mask_loss',mask_loss.item(),niter)
+                self.writer.add_scalar('data/center_loss',center_loss.item(),niter)
+                self.writer.add_scalar('data/heading_class_loss',heading_class_loss.item(),niter)
+                self.writer.add_scalar('data/size_class_loss',size_class_loss.item(),niter)
+                self.writer.add_scalar('data/heading_residual_normalized_loss',heading_residual_normalized_loss.item(),niter)
+                self.writer.add_scalar('data/size_residual_normalized_loss',size_residual_normalized_loss.item(),niter)
+                self.writer.add_scalar('data/stage1_center_loss',stage1_center_loss.item(),niter)
+                self.writer.add_scalar('data/corner_loss',corner_loss.item(),niter)
+
+
                 if batch_num % hyp["log_freq"] ==0:
-                    self.log("Batch number: {0}, loss: {1:.6f}".format(batch_num+1, corner_loss.item()))
+                    self.log("Batch number: {0}, loss: {1:.6f}".format(batch_num+1, total_loss.item()))
 
 
                 # Checks for loss exploding
-                if math.isnan(corner_loss.item()):
+                if math.isnan(total_loss.item()):
                   #  self.save_checkpoint("fault.pth","fault.txt")
                     for key in end_points.keys():
                         try:
@@ -133,18 +147,17 @@ class Trainer:
                         self.log("Loss exploded @logits. Dumped:{}".format(logits))
                     sys.exit("Loss exploded!")
 
-                corner_loss.backward()
+                total_loss.backward()
                 # Implements gradient clipping if desired
                 if hyp["grad_clip"]!=0:
                     nn.utils.clip_grad_value_(self.model.parameters(), hyp["grad_clip"])
-
                 
                 self.optimizer.step()
                 
                 # Keeps track of batch loss and running mean of batch losses
-                self.train_batch_loss.append(corner_loss.item())
+                self.train_batch_loss.append(total_loss.item())
 
-                self.writer.add_scalar('data/iter_loss',corner_loss.item(),niter)
+                self.writer.add_scalar('data/iter_loss',total_loss.item(),niter)
                 niter +=1
 
             # Stores last entry in running average of batch losses as epoch loss
