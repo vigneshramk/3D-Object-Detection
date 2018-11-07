@@ -112,8 +112,7 @@ class Trainer:
                 for key in labels_dict.keys():
                     labels_dict[key]=labels_dict[key].cuda()
 
-                total_loss, mask_loss,center_loss,heading_class_loss,size_class_loss,
-                heading_residual_normalized_loss,size_residual_normalized_loss,stage1_center_loss,corner_loss = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'], 
+                total_loss, mask_loss,center_loss,heading_class_loss,size_class_loss,heading_residual_normalized_loss,size_residual_normalized_loss,stage1_center_loss,corner_loss = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'], 
                                 labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
                                 labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 

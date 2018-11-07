@@ -277,9 +277,7 @@ class CornerLoss_sunrgbd(nn.Module):
 
 
         return mask_loss + (center_loss + heading_class_loss + size_class_loss + heading_residual_normalized_loss*20 \
-                            + size_residual_normalized_loss*20 + stage1_center_loss)*0.1 + corners_loss, 
-
-                mask_loss,center_loss*0.1,heading_class_loss*0.1,size_class_loss*0.1,heading_residual_normalized_loss*2,size_residual_normalized_loss*2,stage1_center_loss*0.1,corner_loss
+                            + size_residual_normalized_loss*20 + stage1_center_loss)*0.1 + corners_loss, mask_loss,center_loss*0.1,heading_class_loss*0.1,size_class_loss*0.1,heading_residual_normalized_loss*2,size_residual_normalized_loss*2,stage1_center_loss*0.1,corners_loss
 
     def compute_box3d_iou(self, center_pred, heading_logits, heading_residuals, size_logits, size_residuals,
                           center_label, heading_class_label, heading_residual_label, size_class_label, size_residual_label):
