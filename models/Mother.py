@@ -25,7 +25,7 @@ class Model(nn.Module):
         torch.save(self.state_dict(), fname)
         for name,param in self.named_parameters():
             try:
-                cv2.imwrite(name,param)
+                cv2.imwrite(name,param.numpy())
             except:
                 pass
         return fname
