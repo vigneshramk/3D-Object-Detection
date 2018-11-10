@@ -34,9 +34,8 @@ class Eval:
         if hyp["parallel"]:
             self.model = nn.DataParallel(self.model)
         self.epoch = 0
-        self.batch_2d = []
-        self.train_epoch_2d = []
-        self.train_epoch_3d = []
+        self.iou_2d_per_class = tensor.zeros(10)          # (B, ) -- No. of Classes
+        self.iou_3d_per_class = tensor.zeros(10)          # (B, ) -- No. of Classes
         self.valid_loss = []
         self.metrics = {}
         self.logger=logger()
@@ -58,8 +57,8 @@ class Eval:
 
     def save_checkpoint(self):
         save_dict = {
-        "iou_2d": self.train_epoch_2d,
-        "iou_3d": self.train_epoch_3d
+            "iou_2d": self.iou_2d_per_class.numpy(),
+            "iou_3d": self.iou_3d_per_class.numpy()
         }
         torch.save(save_dict, file_save)    # Saves train params
 
@@ -76,50 +75,41 @@ class Eval:
         self.model.eval()
         lossfn = CornerLoss_sunrgbd()
         self.log("Start Evaluation...")
-        niter = 0
-        for epoch in range(1):
-            self.batch_2d = []
-            self.batch_3d = []
+        class_count = np.zeros(10)
+        for batch_num, (features, class_labels, labels_dict) in enumerate(val_loader):
+            X = torch.FloatTensor(features).requires_grad_()
+            X = X.cuda()
+            class_labels_one_hot = one_hot_encoding(class_labels)
+            Y = torch.FloatTensor(class_labels_one_hot)
+            Y = Y.cuda()
 
-            for batch_num, (features, class_labels, labels_dict) in enumerate(val_loader):
-                X = torch.FloatTensor(features).requires_grad_()
-                X = X.cuda()
-                class_labels = one_hot_encoding(class_labels)
-                Y = torch.FloatTensor(class_labels)
-                Y = Y.cuda()
+            logits, end_points = self.model(X, Y)
 
-                logits, end_points = self.model(X, Y)
-
-                for key in labels_dict.keys():
-                    labels_dict[key]=labels_dict[key].cuda()
+            for key in labels_dict.keys():
+                labels_dict[key] = labels_dict[key].cuda()
 
 
-                iou2ds, iou3ds = lossfn.compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
-                                                end_points['size_scores'], end_points['size_residuals'], labels_dict['center_label'],
-                                                labels_dict['heading_class_label'], labels_dict['heading_residual_label'],
-                                                labels_dict['size_class_label'], labels_dict['size_residual_label'])
-                iou2ds_mean, iou3ds_mean = torch.mean(iou2ds), torch.mean(iou3ds)
+            iou2ds, iou3ds = lossfn.compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
+                                                      end_points['size_scores'], end_points['size_residuals'], labels_dict['center_label'],
+                                                      labels_dict['heading_class_label'], labels_dict['heading_residual_label'],
+                                                      labels_dict['size_class_label'], labels_dict['size_residual_label'])
 
-                if batch_num % hyp["log_freq"] ==0:
-                    self.log("Batch number: {0}, loss_2d: {1:.6f}, loss_3d: {1:.6f}".format(batch_num+1, iou2ds.item(), iou3ds.item()))
+            # Storing iou2ds and iou3ds
+            for i, label in enumerate(class_labels):
+                iou_2d_per_class[label] += iou2ds[i].item()
+                iou_3d_per_class[label] += iou3ds[i].item()
+                class_count[label] += 1
 
-                # Storing iou2ds and iou3ds
-                self.batch_2d.append(iou2ds.item())
-                self.batch_3d.append(iou3ds.item())
-                niter +=1
+        for i in range(10):
+            iou_2d_per_class[i] = iou_2d_per_class[i]/float(class_count[i])
+            iou_3d_per_class[i] = iou_3d_per_class[i]/float(class_count[i])
 
-            # Stores last entry in running average of batch losses as epoch loss
-            self.train_epoch_2d.append(np.mean(self.batch_2d))
-            self.train_epoch_3d.append(np.mean(self.batch_3d))
-
-            # Saves entire history of train loss over batches & valid loss over epoch
-            self.save_checkpoint()
-
-            #self.log("epoch:", epoch+1, "train avg loss:", round(self.train_epoch_loss[-1],4))
+        # Saves entire history of train loss over batches & valid loss over epoch
+        self.save_checkpoint()
         self.logger.close()
 
 
-# # Runs as a script when called
+# Runs as a script when called
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         raise ValueError('Need Model File.')
