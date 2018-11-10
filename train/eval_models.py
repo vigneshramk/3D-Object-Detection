@@ -48,9 +48,9 @@ class Eval:
         # Create the results directory
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
-        
+
         self.model_dir = '../results' + hyp["test_name"]
-        
+
         # Create the results directory
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
@@ -58,7 +58,7 @@ class Eval:
 
     def save_checkpoint(self):
         save_dict = {
-        "iou_2d": self.train_epoch_2d, 
+        "iou_2d": self.train_epoch_2d,
         "iou_3d": self.train_epoch_3d
         }
         torch.save(save_dict, file_save)    # Saves train params
@@ -87,7 +87,7 @@ class Eval:
                 class_labels = one_hot_encoding(class_labels)
                 Y = torch.FloatTensor(class_labels)
                 Y = Y.cuda()
-                     
+
                 logits, end_points = self.model(X, Y)
 
                 for key in labels_dict.keys():
@@ -95,13 +95,14 @@ class Eval:
 
 
                 iou2ds, iou3ds = lossfn.compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
-                                                end_points['size_scores'], end_points['size_residuals'], labels_dict['center_label'], 
-                                                labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
+                                                end_points['size_scores'], end_points['size_residuals'], labels_dict['center_label'],
+                                                labels_dict['heading_class_label'], labels_dict['heading_residual_label'],
                                                 labels_dict['size_class_label'], labels_dict['size_residual_label'])
+                iou2ds_mean, iou3ds_mean = torch.mean(iou2ds), torch.mean(iou3ds)
 
                 if batch_num % hyp["log_freq"] ==0:
                     self.log("Batch number: {0}, loss_2d: {1:.6f}, loss_3d: {1:.6f}".format(batch_num+1, iou2ds.item(), iou3ds.item()))
-                
+
                 # Storing iou2ds and iou3ds
                 self.batch_2d.append(iou2ds.item())
                 self.batch_3d.append(iou3ds.item())
@@ -110,7 +111,7 @@ class Eval:
             # Stores last entry in running average of batch losses as epoch loss
             self.train_epoch_2d.append(np.mean(self.batch_2d))
             self.train_epoch_3d.append(np.mean(self.batch_3d))
-            
+
             # Saves entire history of train loss over batches & valid loss over epoch
             self.save_checkpoint()
 
