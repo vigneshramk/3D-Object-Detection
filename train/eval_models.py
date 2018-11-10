@@ -4,17 +4,22 @@ import numpy as np
 import torch
 import torch.nn as nn
 import os
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rc('axes', linewidth=2)
+
 import models.Mother as Mother
 from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
 from logger import logger
+from eval_det import eval_det
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
 use_cuda = torch.cuda.is_available()
 print('Cuda')
-
+classname_list = ['bed','table','sofa','chair','toilet','desk','dresser','night_stand','bookshelf','bathtub']
 
 # Function for transforming interger labels to one-hot vectors
 def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
@@ -56,12 +61,9 @@ class Eval:
 
 
     def save_checkpoint(self):
-        save_dict = {
-            "iou_2d": self.iou_2d_per_class.numpy(),
-            "iou_3d": self.iou_3d_per_class.numpy()
-        }
-        torch.save(save_dict, file_save)    # Saves train params
-
+        file_save = self.model_dir + '/' +
+        np.save(self.iou_3d_per_class.numpy(), file_save + 'iou_3d.txt')
+        np.save(self.iou_2d_per_class.numpy(), file_save + 'iou_2d.txt')
 
     def load_checkpoint(self, fname_model, fname_hyp = None):
         load_dict = torch.load(fname_model)
@@ -72,10 +74,15 @@ class Eval:
 
 
     def eval(self, val_loader):
+        gt_cls = {}
+        pred_all = {}
+        ovthresh = 0.25
+
         self.model.eval()
-        lossfn = CornerLoss_sunrgbd()
+        lossfn = CornerLoss_sunrgbd(evaluate=True)
         self.log("Start Evaluation...")
         class_count = np.zeros(glb.NUM_CLASS)
+        ctr = 0
         for batch_num, (features, class_labels, labels_dict) in enumerate(val_loader):
             X = torch.FloatTensor(features).requires_grad_()
             X = X.cuda()
@@ -84,25 +91,44 @@ class Eval:
             Y = Y.cuda()
 
             logits, end_points = self.model(X, Y)
-
             for key in labels_dict.keys():
                 labels_dict[key] = labels_dict[key].cuda()
 
+            iou2ds, iou3ds, corners_3d_gt, corners_3d_pred = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'],
+                                                                    labels_dict['heading_class_label'], labels_dict['heading_residual_label'],
+                                                                    labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 
-            iou2ds, iou3ds = lossfn.compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
-                                                      end_points['size_scores'], end_points['size_residuals'], labels_dict['center_label'],
-                                                      labels_dict['heading_class_label'], labels_dict['heading_residual_label'],
-                                                      labels_dict['size_class_label'], labels_dict['size_residual_label'])
-
+            corners_3d_gt = corners_3d_gt.numpy()
+            corners_3d_pred = corners_3d_pred.numpy()
+            scores = end_points['size_score'].numpy()
             # Storing iou2ds and iou3ds
             for i, label in enumerate(class_labels):
                 self.iou_2d_per_class[label.item()] += iou2ds[i].item()
                 self.iou_3d_per_class[label.item()] += iou3ds[i].item()
-                class_count[label] += 1
+                class_count[label.item()] += 1
+                gt_cls[ctr] = (classname_list[label.item()], corners_3d_gt[i])
+                pred_all[ctr] = (classname_list[label.item()], corners_3d_pred[i], scores[i])
+                ctr = ctr + 1
 
         for i in range(10):
             self.iou_2d_per_class[i] = self.iou_2d_per_class[i]/float(class_count[i])
             self.iou_3d_per_class[i] = self.iou_3d_per_class[i]/float(class_count[i])
+
+        print 'Computing AP...'
+        rec, prec, ap = eval_det(pred_all, gt_all, ovthresh)
+        for classname in ap.keys():
+            print '%015s: %f' % (classname, ap[classname])
+            plt.plot(rec[classname], prec[classname], lw=3)
+            fig = plt.gcf()
+            fig.subplots_adjust(bottom=0.25)
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.05])
+            plt.xlabel('Recall', fontsize=24)
+            plt.ylabel('Precision', fontsize=24)
+            plt.title(classname, fontsize=24)
+            plt.savefig(self.models_dir + self.method + '.png')
+            plt.close()
+         print 'mean AP: ', np.mean([ap[classname] for classname in ap])
 
         # Saves entire history of train loss over batches & valid loss over epoch
         self.save_checkpoint()

@@ -147,7 +147,8 @@ class CornerLoss(nn.Module):
 
 
 class CornerLoss_sunrgbd(nn.Module):
-    def __init__(self):
+    def __init__(self, evaluate=False):
+        self.evaluate = evaluate
         super(CornerLoss_sunrgbd, self).__init__()
 
     def forward(self, logits, mask_label, center_label, heading_class_label,
@@ -275,6 +276,8 @@ class CornerLoss_sunrgbd(nn.Module):
         corners_loss = torch.min(fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt), fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt_flip))
 
 
+        if self.evaluate:
+            return iou2ds, iou3ds, corners_3d_gt, corners_3d_pred
 
         return mask_loss + (center_loss + heading_class_loss + size_class_loss + heading_residual_normalized_loss*20 \
                             + size_residual_normalized_loss*20 + stage1_center_loss)*0.1 + corners_loss, mask_loss,center_loss*0.1,heading_class_loss*0.1,size_class_loss*0.1,heading_residual_normalized_loss*2,size_residual_normalized_loss*2,stage1_center_loss*0.1,corners_loss
