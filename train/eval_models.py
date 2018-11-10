@@ -10,7 +10,6 @@ from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
 from logger import logger
-from tensorboardX import SummaryWriter
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
 use_cuda = torch.cuda.is_available()
@@ -34,7 +33,6 @@ class Eval:
         self.model = model.cuda()
         if hyp["parallel"]:
             self.model = nn.DataParallel(self.model)
-        self.optimizer = optimizer
         self.epoch = 0
         self.batch_2d = []
         self.train_epoch_2d = []
@@ -47,8 +45,6 @@ class Eval:
         self.log("Hyperparameters : {}".format(hyp))
 
         self.log_dir = 'log_directory/' + hyp["log_dir"]
-        self.writer = SummaryWriter(self.log_dir)
-        
         # Create the results directory
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
@@ -86,7 +82,6 @@ class Eval:
             self.batch_3d = []
 
             for batch_num, (features, class_labels, labels_dict) in enumerate(val_loader):
-                self.optimizer.zero_grad()
                 X = torch.FloatTensor(features).requires_grad_()
                 X = X.cuda()
                 class_labels = one_hot_encoding(class_labels)
@@ -103,29 +98,18 @@ class Eval:
                                                 end_points['size_scores'], end_points['size_residuals'], labels_dict['center_label'], 
                                                 labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
                                                 labels_dict['size_class_label'], labels_dict['size_residual_label'])
-                # Plot the individual losses
-
-                self.writer.add_scalar('data/iou2ds',iou2ds.item(),niter)
-                self.writer.add_scalar('data/iou3ds',iou3ds.item(),niter)
 
                 if batch_num % hyp["log_freq"] ==0:
                     self.log("Batch number: {0}, loss_2d: {1:.6f}, loss_3d: {1:.6f}".format(batch_num+1, iou2ds.item(), iou3ds.item()))
-
                 
-                # Keeps track of batch loss and running mean of batch losses
+                # Storing iou2ds and iou3ds
                 self.batch_2d.append(iou2ds.item())
                 self.batch_3d.append(iou3ds.item())
-
-                self.writer.add_scalar('data/iter_2d',iou2ds.item(),niter)
-                self.writer.add_scalar('data/iter_3d',iou3ds.item(),niter)
                 niter +=1
 
             # Stores last entry in running average of batch losses as epoch loss
             self.train_epoch_2d.append(np.mean(self.batch_2d))
             self.train_epoch_3d.append(np.mean(self.batch_3d))
-            self.writer.add_scalar('data/epoch_loss_2d',np.mean(self.batch_2d),epoch)
-            self.writer.add_scalar('data/epoch_loss_3d',np.mean(self.batch_3d),epoch)
-
             
             # Saves entire history of train loss over batches & valid loss over epoch
             self.save_checkpoint()

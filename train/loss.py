@@ -317,7 +317,7 @@ class CornerLoss_sunrgbd(nn.Module):
             iou_3d, iou_2d = self.box3d_iou(corners_3d, corners_3d_label)
             iou3d_list.append(iou_3d)
             iou2d_list.append(iou_2d)
-        return np.array(iou2d_list, dtype=np.float32), np.array(iou3d_list, dtype=np.float32)
+        return torch.tensor(iou2d_list).float(), torch.tensor(iou3d_list).float()
 
     def class2angle(self, pred_cls, residual, num_class, to_label_format=True):
         ''' Inverse function to angle2class '''
