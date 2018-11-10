@@ -61,7 +61,7 @@ class Eval:
 
 
     def save_checkpoint(self):
-        file_save = self.model_dir + '/' +
+        file_save = self.model_dir + '/'
         np.save(self.iou_3d_per_class.numpy(), file_save + 'iou_3d.txt')
         np.save(self.iou_2d_per_class.numpy(), file_save + 'iou_2d.txt')
 
@@ -114,10 +114,10 @@ class Eval:
             self.iou_2d_per_class[i] = self.iou_2d_per_class[i]/float(class_count[i])
             self.iou_3d_per_class[i] = self.iou_3d_per_class[i]/float(class_count[i])
 
-        print 'Computing AP...'
+        print('Computing AP...')
         rec, prec, ap = eval_det(pred_all, gt_all, ovthresh)
         for classname in ap.keys():
-            print '%015s: %f' % (classname, ap[classname])
+            print('%015s: %f' % (classname, ap[classname]))
             plt.plot(rec[classname], prec[classname], lw=3)
             fig = plt.gcf()
             fig.subplots_adjust(bottom=0.25)
@@ -128,7 +128,7 @@ class Eval:
             plt.title(classname, fontsize=24)
             plt.savefig(self.models_dir + self.method + '.png')
             plt.close()
-         print 'mean AP: ', np.mean([ap[classname] for classname in ap])
+        print('mean AP: ', np.mean([ap[classname] for classname in ap]))
 
         # Saves entire history of train loss over batches & valid loss over epoch
         self.save_checkpoint()
