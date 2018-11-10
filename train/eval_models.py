@@ -34,8 +34,8 @@ class Eval:
         if hyp["parallel"]:
             self.model = nn.DataParallel(self.model)
         self.epoch = 0
-        self.iou_2d_per_class = tensor.zeros(10)          # (B, ) -- No. of Classes
-        self.iou_3d_per_class = tensor.zeros(10)          # (B, ) -- No. of Classes
+        self.iou_2d_per_class = torch.zeros(glb.NUM_CLASS)          # (B, ) -- No. of Classes
+        self.iou_3d_per_class = torch.zeros(glb.NUM_CLASS)          # (B, ) -- No. of Classes
         self.valid_loss = []
         self.metrics = {}
         self.logger=logger()
@@ -75,7 +75,7 @@ class Eval:
         self.model.eval()
         lossfn = CornerLoss_sunrgbd()
         self.log("Start Evaluation...")
-        class_count = np.zeros(10)
+        class_count = np.zeros(glb.NUM_CLASS)
         for batch_num, (features, class_labels, labels_dict) in enumerate(val_loader):
             X = torch.FloatTensor(features).requires_grad_()
             X = X.cuda()
@@ -96,13 +96,13 @@ class Eval:
 
             # Storing iou2ds and iou3ds
             for i, label in enumerate(class_labels):
-                iou_2d_per_class[label] += iou2ds[i].item()
-                iou_3d_per_class[label] += iou3ds[i].item()
+                self.iou_2d_per_class[label.item()] += iou2ds[i].item()
+                self.iou_3d_per_class[label.item()] += iou3ds[i].item()
                 class_count[label] += 1
 
         for i in range(10):
-            iou_2d_per_class[i] = iou_2d_per_class[i]/float(class_count[i])
-            iou_3d_per_class[i] = iou_3d_per_class[i]/float(class_count[i])
+            self.iou_2d_per_class[i] = self.iou_2d_per_class[i]/float(class_count[i])
+            self.iou_3d_per_class[i] = self.iou_3d_per_class[i]/float(class_count[i])
 
         # Saves entire history of train loss over batches & valid loss over epoch
         self.save_checkpoint()
@@ -120,5 +120,5 @@ if __name__ == "__main__":
     model_trainer.load_checkpoint(sys.argv[1])
     train_dataset = SUN_TrainDataSet(2048)
     val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
-    model_trainer.eval(val_loader)
-
+    with torch.no_grad():
+        model_trainer.eval(val_loader)
