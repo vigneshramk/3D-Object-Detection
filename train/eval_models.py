@@ -6,6 +6,7 @@ import torch.nn as nn
 import os
 import models.Mother as Mother
 from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader
+from train.train_models import Trainer
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
