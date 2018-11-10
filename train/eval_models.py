@@ -6,7 +6,6 @@ import torch.nn as nn
 import os
 import models.Mother as Mother
 from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader
-from train.train_models import Trainer
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
@@ -142,7 +141,7 @@ if __name__ == "__main__":
 
     # Instantiate models
     net = Mother.Model()
-    model_trainer = Trainer(net)
+    model_trainer = Eval(net)
     model_trainer.load_checkpoint(sys.argv[1])
     train_dataset = SUN_TrainDataSet(2048)
     val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
