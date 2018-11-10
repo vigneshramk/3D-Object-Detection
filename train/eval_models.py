@@ -59,6 +59,7 @@ class Eval:
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
 
+
     def save_checkpoint(self):
         save_dict = {
         "iou_2d": self.train_epoch_2d, 
@@ -67,17 +68,12 @@ class Eval:
         torch.save(save_dict, file_save)    # Saves train params
 
 
-
-
-
     def load_checkpoint(self, fname_model, fname_hyp = None):
         load_dict = torch.load(fname_model)
         self.model.load_state_dict(load_dict['model_state_dict'])
         if (fname_hyp is not None):
             hyp = np.load(fname_hyp)[()]    # Loads dictionary from npy file
             self.log("Hyperparameters loaded from checkpoint as {}".format(hyp))
-
-
 
 
     def eval(self, val_loader):
@@ -139,12 +135,15 @@ class Eval:
 
 
 # # Runs as a script when called
-# if __name__ == "__main__":
-# Instantiate models
-net = Mother.Model()
-model_trainer = Trainer(net)
-model_trainer.load_checkpoint("")
-train_dataset = SUN_TrainDataSet(2048)
-val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
-model_trainer.eval(val_loader)
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        raise ValueError('Need Model File.')
+
+    # Instantiate models
+    net = Mother.Model()
+    model_trainer = Trainer(net)
+    model_trainer.load_checkpoint(sys.argv[1])
+    train_dataset = SUN_TrainDataSet(2048)
+    val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    model_trainer.eval(val_loader)
 
