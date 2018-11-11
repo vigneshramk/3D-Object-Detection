@@ -4,8 +4,8 @@ import numpy as np
 import torch
 import sys
 import torch
-from loader import SUNRGBD
-import data_utils as data_utils
+from data.loader import SUNRGBD
+import data.data_utils as data_utils
 
 type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
 class2type = {type2class[t]:t for t in type2class}
@@ -209,7 +209,7 @@ def convert_batch(batch):
     labels_dict['size_class_label'] = size_class_batch
     labels_dict['size_residual_label'] = size_residual_batch
 
-    return frustum_batch,class_batch,labels_dict
+    return image_id_batch,frustum_batch,class_batch,labels_dict
         
 class SUN_TrainLoader(DataLoader):
 
