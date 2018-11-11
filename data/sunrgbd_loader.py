@@ -188,7 +188,7 @@ def convert_batch(batch):
         size_class_batch.append(size_class)
         size_residual_batch.append(size_residual)
 
-        # rot_angle_batch.append(rot_angle)
+        rot_angle_batch.append(rot_angle)
 
     # image_id_batch = torch.IntTensor(image_id_batch)
 
@@ -198,7 +198,8 @@ def convert_batch(batch):
     angle_residual_batch = torch.FloatTensor(angle_residual_batch)
     size_class_batch = torch.IntTensor(size_class_batch)
     size_residual_batch = torch.stack(size_residual_batch)
-    # rot_angle_batch = torch.stack(rot_angle_batch)
+    
+    rot_angle_batch = torch.LongTensor(rot_angle_batch)
 
     class_batch = torch.IntTensor(class_batch)
 
@@ -208,6 +209,7 @@ def convert_batch(batch):
     labels_dict['heading_residual_label'] = angle_residual_batch
     labels_dict['size_class_label'] = size_class_batch
     labels_dict['size_residual_label'] = size_residual_batch
+    labels_dict['rotate_angle'] = rotate_angle_batch
 
     return image_id_batch,frustum_batch,class_batch,labels_dict
         
