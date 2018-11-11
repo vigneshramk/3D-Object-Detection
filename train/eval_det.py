@@ -105,11 +105,12 @@ def eval_det_cls(pred, gt, ovthresh=0.25, use_07_metric=False):
     confidence = np.array(confidence)
     BB = np.array(BB) # (nd,4 or 8,3)
 
+    # TODO: Sorting is giving an error
     # sort by confidence
-    sorted_ind = np.argsort(-confidence)
-    sorted_scores = np.sort(-confidence)
-    BB = BB[sorted_ind, ...]
-    image_ids = [image_ids[x] for x in sorted_ind]
+    #sorted_ind = np.argsort(-confidence)
+    #sorted_scores = np.sort(-confidence)
+    #BB = BB[sorted_ind, ...]
+    #image_ids = [image_ids[x] for x in sorted_ind]
 
     # go down dets and mark TPs and FPs
     nd = len(image_ids)

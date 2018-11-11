@@ -13,7 +13,6 @@ from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
-from logger import logger
 from eval_det import eval_det
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
@@ -43,10 +42,6 @@ class Eval:
         self.iou_3d_per_class = torch.zeros(glb.NUM_CLASS)          # (B, ) -- No. of Classes
         self.valid_loss = []
         self.metrics = {}
-        self.logger=logger()
-        self.log=self.logger.log
-        self.plot = self.logger.plot        #array,label,epoch or array,label
-        self.log("Hyperparameters : {}".format(hyp))
 
         self.log_dir = 'log_directory/' + hyp["log_dir"]
         # Create the results directory
@@ -60,17 +55,11 @@ class Eval:
             os.makedirs(self.model_dir)
 
 
-    def save_checkpoint(self):
-        file_save = self.model_dir + '/'
-        np.save(self.iou_3d_per_class.numpy(), file_save + 'iou_3d.txt')
-        np.save(self.iou_2d_per_class.numpy(), file_save + 'iou_2d.txt')
-
     def load_checkpoint(self, fname_model, fname_hyp = None):
         load_dict = torch.load(fname_model)
         self.model.load_state_dict(load_dict['model_state_dict'])
         if (fname_hyp is not None):
             hyp = np.load(fname_hyp)[()]    # Loads dictionary from npy file
-            self.log("Hyperparameters loaded from checkpoint as {}".format(hyp))
 
 
     def eval(self, val_loader):
@@ -80,7 +69,6 @@ class Eval:
 
         self.model.eval()
         lossfn = CornerLoss_sunrgbd(evaluate=True)
-        self.log("Start Evaluation...")
         class_count = np.zeros(glb.NUM_CLASS)
         ctr = 0
         for batch_num, (features, class_labels, labels_dict) in enumerate(val_loader):
@@ -98,9 +86,9 @@ class Eval:
                                                                     labels_dict['heading_class_label'], labels_dict['heading_residual_label'],
                                                                     labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 
-            corners_3d_gt = corners_3d_gt.numpy()
-            corners_3d_pred = corners_3d_pred.numpy()
-            scores = end_points['size_score'].numpy()
+            corners_3d_gt = corners_3d_gt.cpu().numpy()
+            corners_3d_pred = corners_3d_pred.cpu().numpy()
+            scores = end_points['size_scores'].cpu().numpy()
             # Storing iou2ds and iou3ds
             for i, label in enumerate(class_labels):
                 self.iou_2d_per_class[label.item()] += iou2ds[i].item()
@@ -126,13 +114,9 @@ class Eval:
             plt.xlabel('Recall', fontsize=24)
             plt.ylabel('Precision', fontsize=24)
             plt.title(classname, fontsize=24)
-            plt.savefig(self.models_dir + self.method + '.png')
+            plt.savefig(self.model_dir + '/' + classname + '.png')
             plt.close()
         print('mean AP: ', np.mean([ap[classname] for classname in ap]))
-
-        # Saves entire history of train loss over batches & valid loss over epoch
-        self.save_checkpoint()
-        self.logger.close()
 
 
 # Runs as a script when called
