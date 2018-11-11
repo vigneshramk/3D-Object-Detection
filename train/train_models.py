@@ -99,7 +99,8 @@ class Trainer:
             self.train_batch_loss = []
             valid_batch_loss = 0  # Resets valid loss for each epoch
 
-            for batch_num, (features, class_labels, labels_dict) in enumerate(train_loader):
+            for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(train_loader):
+                
                 self.optimizer.zero_grad()
                 X = torch.FloatTensor(features).requires_grad_()
                 X = X.cuda()
