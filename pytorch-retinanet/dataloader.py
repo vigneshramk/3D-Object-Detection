@@ -258,6 +258,8 @@ class CSVDataset(Dataset):
         for line, row in enumerate(csv_reader):
             line += 1
 
+            print(row)
+
             try:
                 img_file, x1, y1, x2, y2, class_name = row[:6]
             except ValueError:

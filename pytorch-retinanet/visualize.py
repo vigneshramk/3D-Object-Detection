@@ -107,6 +107,9 @@ def main(args=None):
                     file.write("%d %d %d %d " %(x1,y1,x2,y2))
                     file.write('%.2f \n' %prob)
 
+            file = 'results/' + str(idx) + '.jpg'
+            cv2.imwrite(file,img)
+
             # cv2.imshow('img', img)
             # k = cv2.waitKey(1000)
             # if k==27:    # Esc key to stop
