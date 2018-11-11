@@ -63,15 +63,14 @@ class Eval:
 
 
     def eval(self, val_loader):
-        gt_cls = {}
+        gt_all = {}
         pred_all = {}
         ovthresh = 0.25
 
         self.model.eval()
         lossfn = CornerLoss_sunrgbd(evaluate=True)
         class_count = np.zeros(glb.NUM_CLASS)
-        ctr = 0
-        for batch_num, (features, class_labels, labels_dict) in enumerate(val_loader):
+        for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(val_loader):
             X = torch.FloatTensor(features).requires_grad_()
             X = X.cuda()
             class_labels_one_hot = one_hot_encoding(class_labels)
@@ -94,9 +93,11 @@ class Eval:
                 self.iou_2d_per_class[label.item()] += iou2ds[i].item()
                 self.iou_3d_per_class[label.item()] += iou3ds[i].item()
                 class_count[label.item()] += 1
-                gt_cls[ctr] = (classname_list[label.item()], corners_3d_gt[i])
-                pred_all[ctr] = (classname_list[label.item()], corners_3d_pred[i], scores[i])
-                ctr = ctr + 1
+                if img_id[i] not in gt_all:
+                  gt_all[img_id[i]] = []
+                  pred_all[img_id[i]] = []
+                gt_all[img_id[i]].append((classname_list[label.item()], corners_3d_gt[i]))
+                pred_all[img_id[i]].append((classname_list[label.item()], corners_3d_pred[i], scores[i]))
 
         for i in range(10):
             self.iou_2d_per_class[i] = self.iou_2d_per_class[i]/float(class_count[i])
@@ -129,6 +130,6 @@ if __name__ == "__main__":
     model_trainer = Eval(net)
     model_trainer.load_checkpoint(sys.argv[1])
     train_dataset = SUN_TrainDataSet(2048)
-    val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=False, num_workers=hyp["num_workers"], pin_memory=False)
     with torch.no_grad():
         model_trainer.eval(val_loader)
