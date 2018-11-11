@@ -3,7 +3,8 @@ import gzip
 import numpy as np
 
 # Make a folder data inside the 3D-Object-Detection folder and put the pickle file inside it
-SUN_PATH = './../data'
+SUN_PATH = '/home/ubuntu/3D-Object-Detection/data'
+#SUN_PATH = './../data'
 SUN_FILE = 'sunrgbd_3d.pickle'
 
 type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
@@ -20,7 +21,7 @@ class SUNRGBD:
         self.dev_set = None
         self.train_set = None
         self.test_set = None
-  
+
     @property
     def dev(self):
         pass
@@ -30,7 +31,7 @@ class SUNRGBD:
         if self.train_set is None:
             self.train_set = load_data(SUN_PATH, SUN_FILE)
         return self.train_set
-  
+
     @property
     def test(self):
         pass

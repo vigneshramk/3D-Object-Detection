@@ -14,6 +14,7 @@ from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
 from eval_det import eval_det
+from train.roi_seg_box3d_dataset import compute_box3d_iou
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
 use_cuda = torch.cuda.is_available()
@@ -61,6 +62,20 @@ class Eval:
         if (fname_hyp is not None):
             hyp = np.load(fname_hyp)[()]    # Loads dictionary from npy file
 
+    def rotate_pc_along_y(self, pc, rot_angle):
+        '''
+           Input:
+               pc: numpy array (N,C), first 3 channels are XYZ
+                   z is facing forward, x is left ward, y is downward
+               rot_angle: rad scalar
+           Output:
+       	       pc: updated pc with XYZ rotated
+        '''
+        cosval = np.cos(rot_angle)
+        sinval = np.sin(rot_angle)
+        rotmat = np.array([[cosval, -sinval],[sinval, cosval]])
+        pc[:,[0,2]] = np.dot(pc[:,[0,2]], np.transpose(rotmat))
+        return pc
 
     def eval(self, val_loader):
         gt_all = {}
@@ -81,13 +96,18 @@ class Eval:
             for key in labels_dict.keys():
                 labels_dict[key] = labels_dict[key].cuda()
 
-            iou2ds, iou3ds, corners_3d_gt, corners_3d_pred = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'],
+            iou2ds_temp, iou3ds_temp, corners_3d_gt, corners_3d_pred = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'],
                                                                     labels_dict['heading_class_label'], labels_dict['heading_residual_label'],
                                                                     labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
+
+            iou2ds, iou3ds = compute_box3d_iou(end_points['center'].cpu().numpy(), end_points['heading_scores'].cpu().numpy(), end_points['heading_residuals'].cpu().numpy(),
+                                               end_points['size_scores'].cpu().numpy(), end_points['size_residuals'].cpu().numpy(), labels_dict['center_label'].cpu().numpy(), labels_dict['heading_class_label'].cpu().numpy(),
+                                               labels_dict['heading_residual_label'].cpu().numpy(), labels_dict['size_class_label'].cpu().numpy(), labels_dict['size_residual_label'].cpu().numpy())
 
             corners_3d_gt = corners_3d_gt.cpu().numpy()
             corners_3d_pred = corners_3d_pred.cpu().numpy()
             scores = end_points['size_scores'].cpu().numpy()
+            rot_angles = labels_dict['rotate_angle'].cpu().numpy()
             # Storing iou2ds and iou3ds
             for i, label in enumerate(class_labels):
                 self.iou_2d_per_class[label.item()] += iou2ds[i].item()
@@ -97,11 +117,14 @@ class Eval:
                   gt_all[img_id[i]] = []
                   pred_all[img_id[i]] = []
                 gt_all[img_id[i]].append((classname_list[label.item()], corners_3d_gt[i]))
-                pred_all[img_id[i]].append((classname_list[label.item()], corners_3d_pred[i], scores[i]))
+                pred_all[img_id[i]].append((classname_list[label.item()], self.rotate_pc_along_y(corners_3d_pred[i], rot_angles[i]), scores[i]))
 
         for i in range(10):
             self.iou_2d_per_class[i] = self.iou_2d_per_class[i]/float(class_count[i])
             self.iou_3d_per_class[i] = self.iou_3d_per_class[i]/float(class_count[i])
+
+        print(self.iou_2d_per_class)
+        print(self.iou_3d_per_class)
 
         print('Computing AP...')
         rec, prec, ap = eval_det(pred_all, gt_all, ovthresh)

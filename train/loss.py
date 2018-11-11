@@ -273,11 +273,15 @@ class CornerLoss_sunrgbd(nn.Module):
         assert corners_3d_gt.size(1) == 8 and corners_3d_gt_flip.size(1) == 8
         assert corners_3d_gt.size(2) == 3 and corners_3d_gt_flip.size(2) == 3
 
-        corners_loss = torch.min(fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt), fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt_flip))
-
+        corners_3d_gt_loss = fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt)
+        corners_3d_gt_flip_loss = fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt_flip)
+        corners_loss = torch.min(corners_3d_gt_loss, corners_3d_gt_flip_loss)
 
         if self.evaluate:
-            return iou2ds, iou3ds, corners_3d_gt, corners_3d_pred
+            if corners_3d_gt_loss.item() < corners_3d_gt_flip_loss.item():
+            	return iou2ds, iou3ds, corners_3d_gt, corners_3d_pred
+            else:
+            	return iou2ds, iou3ds, corners_3d_gt_flip, corners_3d_pred
 
         return mask_loss + (center_loss + heading_class_loss + size_class_loss + heading_residual_normalized_loss*20 \
                             + size_residual_normalized_loss*20 + stage1_center_loss)*0.1 + corners_loss, mask_loss,center_loss*0.1,heading_class_loss*0.1,size_class_loss*0.1,heading_residual_normalized_loss*2,size_residual_normalized_loss*2,stage1_center_loss*0.1,corners_loss

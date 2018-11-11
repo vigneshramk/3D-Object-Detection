@@ -26,7 +26,7 @@ NUM_CLASS = 10
 
 class SUN_TrainDataSet(Dataset):
     def __init__(self, npoints, random_flip=False, random_shift=False, rotate_to_center=False, overwritten_data_path=None, from_rgb_detection=False, one_hot=True):
-        
+
         loader = SUNRGBD()
         self.npoints = npoints
         self.random_flip = random_flip
@@ -37,7 +37,7 @@ class SUN_TrainDataSet(Dataset):
         #     overwritten_data_path = os.path.join(BASE_DIR, '%s_1002.zip.pickle'%(split))
 
         self.from_rgb_detection = from_rgb_detection
-        
+
         self.id_list,self.box2d_list,self.box3d_list,self.input_list,self.label_list,self.type_list,self.heading_list,self.size_list,self.frustum_angle_list=loader.train
 
     def __len__(self):
@@ -59,7 +59,7 @@ class SUN_TrainDataSet(Dataset):
             point_set = self.get_center_view_point_set(index)
         else:
             point_set = self.input_list[index]
-        
+
         # Resample - Should we do this?
         choice = np.random.choice(point_set.shape[0], self.npoints, replace=True)
         point_set = point_set[choice, :]
@@ -69,12 +69,12 @@ class SUN_TrainDataSet(Dataset):
                 return point_set, rot_angle, self.prob_list[index], one_hot_vec
             else:
                 return point_set, rot_angle, self.prob_list[index]
-        
+
         # Return image id
         image_id = self.id_list[index]
 
         # ------------------------------ LABELS ----------------------------
-        seg = self.label_list[index] 
+        seg = self.label_list[index]
         seg = seg[choice]
 
         # Get center point of 3D box
@@ -130,7 +130,7 @@ class SUN_TrainDataSet(Dataset):
     def get_center_view_box3d_center(self, index):
         box3d_center = (self.box3d_list[index][0,:] + self.box3d_list[index][6,:])/2.0
         return data_utils.rotate_pc_along_y(np.expand_dims(box3d_center,0), self.get_center_view_rot_angle(index)).squeeze()
-        
+
     def get_center_view_box3d(self, index):
         box3d = self.box3d_list[index]
         box3d_center_view = np.copy(box3d)
@@ -159,7 +159,7 @@ def convert_batch(batch):
     seg_batch = torch.zeros(batch_size,max_points)
 
     labels_dict = {}
-    
+
 
     image_id_batch = []
     box3d_center_batch = []
@@ -179,12 +179,12 @@ def convert_batch(batch):
         frustum_batch[x][:N_curr][:] = point_set
         seg_batch[x][:N_curr] = seg
         class_batch.append(class_label)
-        
+
         box3d_center_batch.append(box3d_center)
-        
+
         angle_class_batch.append(angle_class)
         angle_residual_batch.append(angle_residual)
-        
+
         size_class_batch.append(size_class)
         size_residual_batch.append(size_residual)
 
@@ -198,7 +198,7 @@ def convert_batch(batch):
     angle_residual_batch = torch.FloatTensor(angle_residual_batch)
     size_class_batch = torch.IntTensor(size_class_batch)
     size_residual_batch = torch.stack(size_residual_batch)
-    
+
     rot_angle_batch = torch.LongTensor(rot_angle_batch)
 
     class_batch = torch.IntTensor(class_batch)
@@ -209,10 +209,10 @@ def convert_batch(batch):
     labels_dict['heading_residual_label'] = angle_residual_batch
     labels_dict['size_class_label'] = size_class_batch
     labels_dict['size_residual_label'] = size_residual_batch
-    labels_dict['rotate_angle'] = rotate_angle_batch
+    labels_dict['rotate_angle'] = rot_angle_batch
 
     return image_id_batch,frustum_batch,class_batch,labels_dict
-        
+
 class SUN_TrainLoader(DataLoader):
 
     def __init__(self,*args,**kwargs):

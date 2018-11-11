@@ -143,7 +143,7 @@ def eval_det_cls(pred, gt, ovthresh=0.25, use_07_metric=False):
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)
     rec = tp / float(npos)
-    print('NPOS: %d, TP: %d, FP: %d' % (npos, tp, fp))
+    print('NPOS: %d' % (npos))
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
