@@ -54,14 +54,14 @@ class Model(nn.Module):
     def forward(self, object_point_cloud, mask, stage1_center, one_hot_vec):
         self.end_points['stage1_center'] = stage1_center
         point_cloud_xyz_submean = object_point_cloud - stage1_center.unsqueeze(1)
-        x = point_cloud_xyz_submean.permute(0,2,1).unsqueeze(3)
+        x = point_cloud_xyz_submean.permute(0,2,1).unsqueeze(2)
         x = self.cnn1(x)
         x = self.cnn2(x)
         x = self.cnn3(x)
         x = self.cnn4(x)
         mask_expand = mask.unsqueeze(-1).repeat(1,1,1,512)
-        masked_x = x*mask_expand.float().permute(0,3,1,2)
-        x = nn.functional.max_pool2d(masked_x, kernel_size=(object_point_cloud.size(1),1), stride=(2,2), padding=0)
+        masked_x = x*mask_expand.float().permute(0,3,2,1)
+        x = nn.functional.max_pool2d(masked_x.permute(0, 1, 3, 2), kernel_size=(object_point_cloud.size(1),1), stride=(2,2), padding=0)
         x = x.squeeze(-1).squeeze(-1)
         x = torch.cat([x,one_hot_vec], 1)
         x = self.fc1(x)
