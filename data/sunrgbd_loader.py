@@ -70,6 +70,9 @@ class SUN_TrainDataSet(Dataset):
             else:
                 return point_set, rot_angle, self.prob_list[index]
         
+        # Return image id
+        image_id = self.id_list[index]
+
         # ------------------------------ LABELS ----------------------------
         seg = self.label_list[index] 
         seg = seg[choice]
@@ -113,9 +116,9 @@ class SUN_TrainDataSet(Dataset):
         size_residual = torch.FloatTensor(size_residual)
 
         if self.one_hot:
-            return point_set, seg, box3d_center, angle_class, angle_residual, size_class, size_residual, rot_angle, class_label
+            return image_id, point_set, seg, box3d_center, angle_class, angle_residual, size_class, size_residual, rot_angle, class_label
         else:
-            return point_set, seg, box3d_center, angle_class, angle_residual, size_class, size_residual, rot_angle
+            return image_id, point_set, seg, box3d_center, angle_class, angle_residual, size_class, size_residual, rot_angle
 
     def get_center_view_rot_angle(self, index):
         return np.pi/2.0 + self.frustum_angle_list[index]
@@ -158,6 +161,7 @@ def convert_batch(batch):
     labels_dict = {}
     
 
+    image_id_batch = []
     box3d_center_batch = []
     angle_class_batch = []
     angle_residual_batch = []
@@ -167,7 +171,10 @@ def convert_batch(batch):
 
     for x in range(batch_size):
 
-        point_set, seg, box3d_center, angle_class, angle_residual, size_class, size_residual, rot_angle, class_label = batch[x]
+        image_id, point_set, seg, box3d_center, angle_class, angle_residual, size_class, size_residual, rot_angle, class_label = batch[x]
+
+        image_id_batch.append(image_id)
+
         N_curr = point_set.shape[0]
         frustum_batch[x][:N_curr][:] = point_set
         seg_batch[x][:N_curr] = seg
@@ -182,6 +189,8 @@ def convert_batch(batch):
         size_residual_batch.append(size_residual)
 
         # rot_angle_batch.append(rot_angle)
+
+    image_id_batch = torch.IntTensor(image_id_batch)
 
     box3d_center_batch = torch.stack(box3d_center_batch)
 
@@ -219,7 +228,7 @@ def test_dataloader():
         if i>0:
             break
 
-        frustum_batch,class_batch,labels_dict = data
+        image_id_batch,frustum_batch,class_batch,labels_dict = data
 
         print(frustum_batch.shape,class_batch.shape)
         print(labels_dict.keys())
