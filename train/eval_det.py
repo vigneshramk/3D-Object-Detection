@@ -117,7 +117,6 @@ def eval_det_cls(pred, gt, ovthresh=0.25, use_07_metric=False):
     tp = np.zeros(nd)
     fp = np.zeros(nd)
     for d in range(nd):
-        if d%100==0: print(d)
         R = class_recs[image_ids[d]]
         bb = BB[d,:].astype(float)
         ovmax = -np.inf
@@ -131,7 +130,6 @@ def eval_det_cls(pred, gt, ovthresh=0.25, use_07_metric=False):
                     ovmax = iou
                     jmax = j
 
-        #print d, ovmax
         if ovmax > ovthresh:
             if not R['det'][jmax]:
                 tp[d] = 1.
@@ -145,7 +143,7 @@ def eval_det_cls(pred, gt, ovthresh=0.25, use_07_metric=False):
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)
     rec = tp / float(npos)
-    print('NPOS: ', npos)
+    print('NPOS: %d, TP: %d, FP: %d' % (npos, tp, fp))
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
