@@ -152,7 +152,7 @@ def convert_batch(batch):
 
     max_points = float('-inf')
     for i in range(batch_size):
-        max_points = max(max_points,batch[i][0].size(0))
+        max_points = max(max_points,batch[i][1].size(0))
 
     frustum_batch = torch.zeros(batch_size,max_points,4)
     class_batch = []
