@@ -25,8 +25,7 @@ NUM_SIZE_CLUSTER = 10
 NUM_CLASS = 10
 
 class SUN_TrainDataSet(Dataset):
-    def __init__(self, npoints, random_flip=False, random_shift=False, rotate_to_center=False, overwritten_data_path=None, from_rgb_detection=False, one_hot=True):
-
+    def __init__(self, npoints, rotate_to_center=True, random_flip=True, random_shift=True, overwritten_data_path=None, from_rgb_detection=False, one_hot=True):
         loader = SUNRGBD()
         self.npoints = npoints
         self.random_flip = random_flip
