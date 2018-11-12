@@ -5,12 +5,13 @@ import torch
 import torch.nn as nn
 import os
 import models.Mother as Mother
-from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader
+from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader, interface_to_dataset
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
 from logger import logger
 from tensorboardX import SummaryWriter
+from eval_models import Eval
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
 use_cuda = torch.cuda.is_available()
@@ -57,6 +58,9 @@ class Trainer:
         # Create the results directory
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
+        self.training_evaluator = Eval(net)
+        self.dev_evaluator = Eval(net)
+
 
     def save_checkpoint(self):
         save_dict = {
@@ -165,28 +169,9 @@ class Trainer:
             self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),epoch)
 
             #print("Training for %d epoch completed", %epoch)
+            self.training_evaluator.eval(train_loader)
+            self.dev_evaluator.eval(val_loader)
 
-            if False:
-
-                self.model.eval()
-                #torch.autograd.set_detect_anomaly(False)
-                for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
-                    X_val = torch.FloatTensor(val_features)
-                    X_val = X_val.cuda()
-
-                    val_class_labels = one_hot_encoding(val_class_labels)
-                    Y_val = torch.FloatTensor(val_class_labels)
-                    Y_val = Y_val.cuda()
-
-                    val_logits, val_end_points = self.model(X_val, Y_val)
-
-                    for key in val_labels_dict.keys():
-                        val_labels_dict[key]=val_labels_dict[key].cuda()
-
-                    # May want to sum losses and average in a way acc. to number of points rather than simple averaging ?
-                    valid_batch_loss += lossfn(val_logits, val_labels_dict['mask_label'], val_labels_dict['center_label'],
-                                            val_labels_dict['heading_class_label'], val_labels_dict['heading_residual_label'],
-                                            val_labels_dict['size_class_label'], val_labels_dict['size_residual_label'], val_end_points)
                 # Averages valid loss
                 self.valid_loss.append(valid_batch_loss/(batch_idx+1))
 
@@ -206,9 +191,9 @@ if __name__ == "__main__":
     AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optim_reg'])
 
     model_trainer = Trainer(net, AdamOptimizer)
-    train_dataset = SUN_TrainDataSet(2048)
-    train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
-    val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    dataset = interface_to_dataset(2048)
+    train_loader = SUN_TrainLoader(dataset.training, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    val_loader = SUN_TrainLoader(dataset.validation, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
     if len(sys.argv) == 2:
         print('Loading Model File')
         model_trainer.load_checkpoint(sys.argv[1])

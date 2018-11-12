@@ -212,6 +212,30 @@ def convert_batch(batch):
 
     return image_id_batch,frustum_batch,class_batch,labels_dict
 
+class interface_to_dataset():
+    def __init__(self,*args,**kwargs):
+        self.dataset = SUN_TrainDataSet(*args, **kwargs)
+        self.total_size = len(self.dataset)
+        indices = list(range(self.total_size))
+        np.shuffle(indices)
+        self.train_indices = indices[:self.total_size*4//5]
+        self.val_indices = indices[self.total_size*4//5:]
+
+        self.training = self.interface(self.dataset, self.train_indices)
+        self.validation = self.interface(self.dataset, self.val_indices)
+
+    class interface():
+        def __init__(self, dataset, indices):
+            self.dataset = dataset
+            self.indices = indices
+
+        def __len__(self):
+            return len(self.indices)
+
+        def __getitem__(self,index):
+            return self.dataset[self.indices[index]]
+
+
 class SUN_TrainLoader(DataLoader):
 
     def __init__(self,*args,**kwargs):
