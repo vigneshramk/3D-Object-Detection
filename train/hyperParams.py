@@ -3,7 +3,7 @@
 hyp = {
 "num_epochs": 50,
 "lr": 1e-4,
-"batch_size": 90,
+"batch_size": 32,
 "num_workers":1,
 "grad_clip": 100,
 "optim_reg": 1e-5,

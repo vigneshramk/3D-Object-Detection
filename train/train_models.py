@@ -47,22 +47,22 @@ class Trainer:
 
         self.log_dir = 'log_directory/' + hyp["log_dir"]
         self.writer = SummaryWriter(self.log_dir)
-        
+
         # Create the results directory
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
-        
+
         self.model_dir = '../results' + hyp["test_name"]
-        
+
         # Create the results directory
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
 
     def save_checkpoint(self):
         save_dict = {
-        "epoch_idx": self.epoch + 1, 
-        "model_state_dict": self.model.state_dict(), 
-        "optim_state_dict":self.optimizer.state_dict(), 
+        "epoch_idx": self.epoch + 1,
+        "model_state_dict": self.model.state_dict(),
+        "optim_state_dict":self.optimizer.state_dict(),
         #"training_loss":self.train_avg_loss,
         "training_epoch_loss": self.train_epoch_loss,
         # "val_loss":self.valid_loss
@@ -75,7 +75,7 @@ class Trainer:
         np_save = self.model_dir + '/' + fname_hyp
 
         torch.save(save_dict, file_save)    # Saves train params
-        np.save(np_save, hyp)               # Saves hyperparams dictionary    
+        np.save(np_save, hyp)               # Saves hyperparams dictionary
 
     def load_checkpoint(self, fname_model, fname_hyp = None):
         load_dict = torch.load(fname_model)
@@ -100,24 +100,24 @@ class Trainer:
             valid_batch_loss = 0  # Resets valid loss for each epoch
             self.epoch = epoch + 1
             for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(train_loader):
-                
+
                 self.optimizer.zero_grad()
                 X = torch.FloatTensor(features).requires_grad_()
                 X = X.cuda()
                 class_labels = one_hot_encoding(class_labels)
                 Y = torch.FloatTensor(class_labels)
                 Y = Y.cuda()
-                     
+
                 logits, end_points = self.model(X, Y)
 
                 for key in labels_dict.keys():
                     labels_dict[key]=labels_dict[key].cuda()
 
-                total_loss, mask_loss,center_loss,heading_class_loss,size_class_loss,heading_residual_normalized_loss,size_residual_normalized_loss,stage1_center_loss,corner_loss = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'], 
-                                labels_dict['heading_class_label'], labels_dict['heading_residual_label'], 
+                total_loss, mask_loss,center_loss,heading_class_loss,size_class_loss,heading_residual_normalized_loss,size_residual_normalized_loss,stage1_center_loss,corner_loss = lossfn(logits, labels_dict['mask_label'], labels_dict['center_label'],
+                                labels_dict['heading_class_label'], labels_dict['heading_residual_label'],
                                 labels_dict['size_class_label'], labels_dict['size_residual_label'], end_points)
 
-                
+
                 # Plot the individual losses
 
                 self.writer.add_scalar('data/mask_loss',mask_loss.item(),niter)
@@ -151,9 +151,9 @@ class Trainer:
                 # Implements gradient clipping if desired
                 if hyp["grad_clip"]!=0:
                     nn.utils.clip_grad_value_(self.model.parameters(), hyp["grad_clip"])
-                
+
                 self.optimizer.step()
-                
+
                 # Keeps track of batch loss and running mean of batch losses
                 self.train_batch_loss.append(total_loss.item())
 
@@ -165,7 +165,7 @@ class Trainer:
             self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),epoch)
 
             #print("Training for %d epoch completed", %epoch)
-            
+
             if False:
 
                 self.model.eval()
@@ -184,8 +184,8 @@ class Trainer:
                         val_labels_dict[key]=val_labels_dict[key].cuda()
 
                     # May want to sum losses and average in a way acc. to number of points rather than simple averaging ?
-                    valid_batch_loss += lossfn(val_logits, val_labels_dict['mask_label'], val_labels_dict['center_label'], 
-                                            val_labels_dict['heading_class_label'], val_labels_dict['heading_residual_label'], 
+                    valid_batch_loss += lossfn(val_logits, val_labels_dict['mask_label'], val_labels_dict['center_label'],
+                                            val_labels_dict['heading_class_label'], val_labels_dict['heading_residual_label'],
                                             val_labels_dict['size_class_label'], val_labels_dict['size_residual_label'], val_end_points)
                 # Averages valid loss
                 self.valid_loss.append(valid_batch_loss/(batch_idx+1))
@@ -200,14 +200,17 @@ class Trainer:
 
 
 # # Runs as a script when called
-# if __name__ == "__main__":
+if __name__ == "__main__":
 # Instantiate models
-net = Mother.Model()
-AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optim_reg'])
+    net = Mother.Model()
+    AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optim_reg'])
 
-model_trainer = Trainer(net, AdamOptimizer)
-train_dataset = SUN_TrainDataSet(2048)
-train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
-val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
-model_trainer.run(train_loader, val_loader, epochs=hyp['num_epochs'])
+    model_trainer = Trainer(net, AdamOptimizer)
+    train_dataset = SUN_TrainDataSet(2048)
+    train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    if len(sys.argv) == 2:
+        print('Loading Model File')
+        model_trainer.load_checkpoint(sys.argv[1])
+    model_trainer.run(train_loader, val_loader, epochs=hyp['num_epochs'])
 

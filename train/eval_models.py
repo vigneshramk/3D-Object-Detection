@@ -83,6 +83,7 @@ class Eval:
 
         self.model.eval()
         class_count = np.zeros(glb.NUM_CLASS)
+        class_acc_count = np.zeros(glb.NUM_CLASS)
         for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(val_loader):
             X = torch.FloatTensor(features).requires_grad_()
             X = X.cuda()
@@ -100,24 +101,27 @@ class Eval:
 
             scores = end_points['size_scores'].cpu().numpy()
             rot_angles = labels_dict['rotate_angle'].cpu().numpy()
-            # Storing iou2ds and iou3ds
             for i, label in enumerate(class_labels):
                 self.iou_2d_per_class[label.item()] += iou2ds[i].item()
                 self.iou_3d_per_class[label.item()] += iou3ds[i].item()
                 class_count[label.item()] += 1
+                if label.item() == np.argmax(scores[i]):
+                    class_acc_count[label.item()] += 1
                 if img_id[i] not in gt_all:
-                  gt_all[img_id[i]] = []
-                  pred_all[img_id[i]] = []
+                    gt_all[img_id[i]] = []
+                    pred_all[img_id[i]] = []
+                #gt_all[img_id[i]].append((classname_list[label.item()], corners_3d_gt[i]))
                 gt_all[img_id[i]].append((classname_list[label.item()], self.rotate_pc_along_y(corners_3d_gt[i], -1.0*rot_angles[i])))
-                #pred_all[img_id[i]].append((classname_list[label.item()], self.rotate_pc_along_y(corners_3d_pred[i], -1.0*rot_angles[i]), scores[i]))
-                pred_all[img_id[i]].append((classname_list[label.item()], corners_3d_pred[i], scores[i]))
+                #pred_all[img_id[i]].append((classname_list[label.item()], self.rotate_pc_along_y(corners_3d_pred[i], -1.0*rot_angles[i]), scores[i][label.item()]))
+                pred_all[img_id[i]].append((classname_list[label.item()], corners_3d_pred[i], scores[i][label.item()]))
 
-        for i in range(10):
+        for i in range(glb.NUM_CLASS):
             self.iou_2d_per_class[i] = self.iou_2d_per_class[i]/float(class_count[i])
             self.iou_3d_per_class[i] = self.iou_3d_per_class[i]/float(class_count[i])
+            print('%s: %f' % (classname_list[i], class_acc_count[i]/float(class_count[i])))
 
-        print(self.iou_2d_per_class)
-        print(self.iou_3d_per_class)
+        print('iou2d: ', self.iou_2d_per_class)
+        print('iou3d: ', self.iou_3d_per_class)
 
         print('Computing AP...')
         rec, prec, ap = eval_det(pred_all, gt_all, ovthresh)
