@@ -147,8 +147,7 @@ class CornerLoss(nn.Module):
 
 
 class CornerLoss_sunrgbd(nn.Module):
-    def __init__(self, evaluate=False):
-        self.evaluate = evaluate
+    def __init__(self):
         super(CornerLoss_sunrgbd, self).__init__()
 
     def forward(self, logits, mask_label, center_label, heading_class_label,
@@ -229,11 +228,11 @@ class CornerLoss_sunrgbd(nn.Module):
 
         # TODO: Have to add this in computational graph
         # Compute IOU 3D
-        iou2ds, iou3ds = self.compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
-                                                end_points['size_scores'], end_points['size_residuals'], center_label, heading_class_label,
-                                                heading_residual_label, size_class_label, size_residual_label)
-        end_points['iou2ds'] = iou2ds
-        end_points['iou3ds'] = iou3ds
+        #iou2ds, iou3ds = self.compute_box3d_iou(end_points['center'], end_points['heading_scores'], end_points['heading_residuals'],
+        #                                        end_points['size_scores'], end_points['size_residuals'], center_label, heading_class_label,
+        #                                        heading_residual_label, size_class_label, size_residual_label)
+        #end_points['iou2ds'] = iou2ds
+        #end_points['iou3ds'] = iou3ds
 
         # Compute BOX3D corners
         corners_3d = get_box3d_corners(end_points['center'], end_points['heading_residuals'],
@@ -276,12 +275,6 @@ class CornerLoss_sunrgbd(nn.Module):
         corners_3d_gt_loss = fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt)
         corners_3d_gt_flip_loss = fn.smooth_l1_loss(corners_3d_pred, corners_3d_gt_flip)
         corners_loss = torch.min(corners_3d_gt_loss, corners_3d_gt_flip_loss)
-
-        if self.evaluate:
-            if corners_3d_gt_loss.item() < corners_3d_gt_flip_loss.item():
-            	return iou2ds, iou3ds, corners_3d_gt, corners_3d_pred
-            else:
-            	return iou2ds, iou3ds, corners_3d_gt_flip, corners_3d_pred
 
         return mask_loss + (center_loss + heading_class_loss + size_class_loss + heading_residual_normalized_loss*20 \
                             + size_residual_normalized_loss*20 + stage1_center_loss)*0.1 + corners_loss, mask_loss,center_loss*0.1,heading_class_loss*0.1,size_class_loss*0.1,heading_residual_normalized_loss*2,size_residual_normalized_loss*2,stage1_center_loss*0.1,corners_loss

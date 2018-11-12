@@ -69,13 +69,12 @@ class TNet(nn.Module):
         x = point_cloud_xyz_stage1.permute(0, 2, 1)
         x = x.unsqueeze(2)
 
-        # TODO: Input dimension for TNet is required
         x = self.conv(x)
         mask_expand = mask.unsqueeze(-1).repeat(1, 1, 1, 256)
         masked_net = x*mask_expand.float().permute(0, 3, 2 , 1)
         x = nn.functional.max_pool2d(masked_net.permute(0, 1, 3, 2), (num_point, 1))
 
-        x = x.view(x.size(0), -1)
+        x = x.squeeze(-1).squeeze(-1)
         x = torch.cat((x, one_hot_vec), dim=1)
         stage1_center = self.fc(x)
 

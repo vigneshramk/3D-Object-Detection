@@ -88,8 +88,8 @@ class InstanceSegNet(nn.Module):
     x = F.relu(self.bn4(self.conv4(point_feat)))
     x = F.relu(self.bn5(self.conv5(x)))
 
-    global_feat = torch.unsqueeze(torch.mean(x, dim=2), 2)              # Output Tensor size: B x 64 x 1 x 1
-    # global_feat = F.max_pool2d(x, [num_points,1], stride = [2,2], padding=0)    # Output Tensor size: B x 64 x 1 x 1
+    #global_feat = torch.unsqueeze(torch.mean(x, dim=2), 2)              # Output Tensor size: B x 64 x 1 x 1
+    global_feat = F.max_pool2d(x, [num_points,1], stride = [2,2], padding=0)    # Output Tensor size: B x 64 x 1 x 1
     one_hot_vec = torch.unsqueeze(torch.unsqueeze(one_hot_vec, 2), 2)           # 4D Tensor: B x K x 1 x 1
     global_feat = torch.cat([global_feat, one_hot_vec], dim=1)          # Concatenated Tensor size: B x (64+K) x 1 x 1
     global_feat = global_feat.repeat(1,1,num_points,1)                  # Resulting Tensor size: B x (64+K) x N x 1

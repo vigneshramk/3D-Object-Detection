@@ -98,7 +98,7 @@ class Trainer:
         for epoch in range(epochs):
             self.train_batch_loss = []
             valid_batch_loss = 0  # Resets valid loss for each epoch
-
+            self.epoch = epoch + 1
             for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(train_loader):
                 
                 self.optimizer.zero_grad()
