@@ -30,7 +30,6 @@ NOTE: type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5,
 
 
 Dataloader Part 2 - Output of the batching function in sunrgbd_loader.py
-
 image_id_batch,frustum_batch,class_batch,labels_dict
 
 1. image_id_batch - list of len batch_size containing the id of the data file used  (integer with 6 digits. e.g 000066 for id 66)

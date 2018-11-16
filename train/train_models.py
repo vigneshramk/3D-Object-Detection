@@ -11,6 +11,7 @@ import models.globalVariables as glb
 from hyperParams import hyp
 from logger import logger
 from tensorboardX import SummaryWriter
+from eval_models import Eval
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
 use_cuda = torch.cuda.is_available()
@@ -57,6 +58,9 @@ class Trainer:
         # Create the results directory
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
+        self.training_evaluator = Eval(net)
+        self.dev_evaluator = Eval(net)
+
 
     def save_checkpoint(self):
         save_dict = {
@@ -165,6 +169,8 @@ class Trainer:
             self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),epoch)
 
             #print("Training for %d epoch completed", %epoch)
+            self.training_evaluator.eval(train_loader)
+            self.dev_evaluator.eval(val_loader)
 
             # TODO: Replace this code with Eval code
 
@@ -214,7 +220,7 @@ if __name__ == "__main__":
 
     train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
     val_loader = SUN_ValLoader(val_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
-    
+
     if len(sys.argv) == 2:
         print('Loading Model File')
         model_trainer.load_checkpoint(sys.argv[1])
