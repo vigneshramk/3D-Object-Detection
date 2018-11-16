@@ -3,9 +3,10 @@ import gzip
 import numpy as np
 
 # Make a folder data inside the 3D-Object-Detection folder and put the pickle file inside it
-SUN_PATH = '/home/ubuntu/3D-Object-Detection/data'
-#SUN_PATH = './../data'
-SUN_FILE = 'sunrgbd_3d.pickle'
+# SUN_PATH = '/home/ubuntu/3D-Object-Detection/data'
+SUN_PATH = './../data'
+SUN_TRAIN_FILE = 'sunrgbd_3d.pickle'
+SUN_VAL_FILE = 'sunrgbd_val.pickle'
 
 type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
 
@@ -18,18 +19,20 @@ def load_zipped_pickle(filename):
 class SUNRGBD:
 
     def __init__(self):
-        self.dev_set = None
+        self.val_set = None
         self.train_set = None
         self.test_set = None
 
     @property
-    def dev(self):
-        pass
+    def val(self):
+        if self.val_set is None:
+            self.val_set = load_data(SUN_PATH, SUN_VAL_FILE)
+        return self.val_set
 
     @property
     def train(self):
         if self.train_set is None:
-            self.train_set = load_data(SUN_PATH, SUN_FILE)
+            self.train_set = load_data(SUN_PATH, SUN_TRAIN_FILE)
         return self.train_set
 
     @property
@@ -63,9 +66,7 @@ def load_data(SUN_PATH, SUN_FILE):
 # Testing the loader
 def test_loader():
     loader = SUNRGBD()
-    frustum,class_label,seg_mask,box3d = loader.train
-    for i in range(len(frustum)):
-        print(frustum[i].shape,class_label[i],seg_mask[i].shape,box3d[i].shape)
+    id_list,box2d_list,box3d_list,input_list,label_list,type_list,heading_list,size_list,frustum_angle_list=loader.train
 
 # Call this to test
 # test_loader()

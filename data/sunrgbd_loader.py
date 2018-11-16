@@ -24,20 +24,21 @@ NUM_HEADING_BIN = 12
 NUM_SIZE_CLUSTER = 10
 NUM_CLASS = 10
 
-class SUN_TrainDataSet(Dataset):
-    def __init__(self, npoints, rotate_to_center=True, random_flip=True, random_shift=True, overwritten_data_path=None, from_rgb_detection=False, one_hot=True):
+class SUN_Dataset(Dataset):
+    def __init__(self, mode, npoints, rotate_to_center=True, random_flip=True, random_shift=True, overwritten_data_path=None, from_rgb_detection=False, one_hot=True):
         loader = SUNRGBD()
         self.npoints = npoints
         self.random_flip = random_flip
         self.random_shift = random_shift
         self.rotate_to_center = rotate_to_center
         self.one_hot = one_hot
-        # if overwritten_data_path is None:
-        #     overwritten_data_path = os.path.join(BASE_DIR, '%s_1002.zip.pickle'%(split))
-
         self.from_rgb_detection = from_rgb_detection
-
-        self.id_list,self.box2d_list,self.box3d_list,self.input_list,self.label_list,self.type_list,self.heading_list,self.size_list,self.frustum_angle_list=loader.train
+        if 'train' in mode:
+            self.id_list,self.box2d_list,self.box3d_list,self.input_list,self.label_list,self.type_list,self.heading_list,self.size_list,self.frustum_angle_list=loader.train
+        elif 'val' in mode:
+            self.id_list,self.box2d_list,self.box3d_list,self.input_list,self.label_list,self.type_list,self.heading_list,self.size_list,self.frustum_angle_list=loader.val
+        else:
+            print('Choose one of training and validation datasets')
 
     def __len__(self):
             return len(self.input_list)
@@ -50,7 +51,6 @@ class SUN_TrainDataSet(Dataset):
         if self.one_hot:
             cls_type = self.type_list[index]
             assert(cls_type in ['bed','table','sofa','chair','toilet','desk','dresser','night_stand','bookshelf','bathtub'])
-            # one_hot_vec = np.zeros((NUM_CLASS))
             class_label = type2onehotclass[cls_type]
 
         # Get point cloud
@@ -119,6 +119,7 @@ class SUN_TrainDataSet(Dataset):
         else:
             return image_id, point_set, seg, box3d_center, angle_class, angle_residual, size_class, size_residual, rot_angle
 
+
     def get_center_view_rot_angle(self, index):
         return np.pi/2.0 + self.frustum_angle_list[index]
 
@@ -143,8 +144,6 @@ class SUN_TrainDataSet(Dataset):
         point_set = np.copy(self.input_list[index])
         return data_utils.rotate_pc_along_y(point_set, self.get_center_view_rot_angle(index))
 
-
-
 def convert_batch(batch):
 
     batch_size = len(batch)
@@ -158,7 +157,6 @@ def convert_batch(batch):
     seg_batch = torch.zeros(batch_size,max_points)
 
     labels_dict = {}
-
 
     image_id_batch = []
     box3d_center_batch = []
@@ -213,6 +211,12 @@ def convert_batch(batch):
     return image_id_batch,frustum_batch,class_batch,labels_dict
 
 class SUN_TrainLoader(DataLoader):
+
+    def __init__(self,*args,**kwargs):
+        super(SUN_TrainLoader, self).__init__(*args, **kwargs)
+        self.collate_fn = convert_batch
+
+class SUN_ValLoader(DataLoader):
 
     def __init__(self,*args,**kwargs):
         super(SUN_TrainLoader, self).__init__(*args, **kwargs)

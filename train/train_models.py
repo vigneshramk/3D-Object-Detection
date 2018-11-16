@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import os
 import models.Mother as Mother
-from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader
+from data.sunrgbd_loader import SUN_Dataset,SUN_TrainLoader,SUN_ValLoader
 from loss import CornerLoss_sunrgbd
 import models.globalVariables as glb
 from hyperParams import hyp
@@ -166,6 +166,8 @@ class Trainer:
 
             #print("Training for %d epoch completed", %epoch)
 
+            # TODO: Replace this code with Eval code
+
             if False:
 
                 self.model.eval()
@@ -206,9 +208,13 @@ if __name__ == "__main__":
     AdamOptimizer = torch.optim.Adam(net.parameters(), lr=hyp['lr'], weight_decay=hyp['optim_reg'])
 
     model_trainer = Trainer(net, AdamOptimizer)
-    train_dataset = SUN_TrainDataSet(2048)
+    
+    train_dataset = SUN_Dataset('train',2048)
+    val_dataset = SUN_Dataset('val',2048)
+
     train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
-    val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    val_loader = SUN_ValLoader(val_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    
     if len(sys.argv) == 2:
         print('Loading Model File')
         model_trainer.load_checkpoint(sys.argv[1])
