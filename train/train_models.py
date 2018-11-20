@@ -55,7 +55,7 @@ class Trainer:
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
 
-        self.model_dir = '../results' + hyp["test_name"]
+        self.model_dir = '../results/' + hyp["test_name"]
 
         # Create the results directory
         if not os.path.exists(self.model_dir):
@@ -74,8 +74,8 @@ class Trainer:
         # "val_loss":self.valid_loss
         }
 
-        fname_model = hyp["model_fname"]+"ep"+str(self.epoch)+".pth"
-        fname_hyp = hyp["hyp_fname"]+"ep"+str(self.epoch)+".txt"
+        fname_model = hyp["model_fname"]+"_ep"+str(self.epoch)+".pth"
+        fname_hyp = hyp["hyp_fname"]+"_ep"+str(self.epoch)+".txt"
 
         file_save = self.model_dir + '/' + fname_model
         np_save = self.model_dir + '/' + fname_hyp
