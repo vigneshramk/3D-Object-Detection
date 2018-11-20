@@ -5,7 +5,6 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 import numpy as np
 sys.path.append(os.path.join(BASE_DIR, '../sunrgbd_data'))
-from train.utils import roty, load_zipped_pickle
 sys.path.append(os.path.join(BASE_DIR, '../../train'))
 from train.box_util import box3d_iou
 
@@ -25,6 +24,20 @@ type_mean_size = {'bathtub': np.array([0.765840,1.398258,0.472728]),
 NUM_HEADING_BIN = 12
 NUM_SIZE_CLUSTER = 10
 NUM_CLASS = 10
+
+# Utilities needed for this program
+def load_zipped_pickle(filename):
+    with gzip.open(filename, 'rb') as f:
+        loaded_object = pickle.load(f)
+        return loaded_object
+
+def roty(t):
+       """Rotation about the y-axis."""
+       c = np.cos(t)
+       s = np.sin(t)
+       return np.array([[c,  0,  s],
+                        [0,  1,  0],
+                        [-s, 0,  c]])
 
 def rotate_pc_along_y(pc, rot_angle):
     ''' Input ps is NxC points with first 3 channels as XYZ

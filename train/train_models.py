@@ -31,12 +31,14 @@ def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
 
 # Training cradle
 class Trainer:
-    def __init__(self, model, optimizer):
+    def __init__(self, model, optimizer, train_mode=False, eval_mode=False):
         self.model = model.cuda()
         if hyp["parallel"]:
             self.model = nn.DataParallel(self.model)
         self.optimizer = optimizer
         self.epoch = 0
+        self.train_mode = train_mode
+        self.eval_mode = eval_mode
         self.train_batch_loss = []
         self.train_epoch_loss = []
         self.valid_loss = []
@@ -98,11 +100,11 @@ class Trainer:
         #torch.autograd.set_detect_anomaly(True)
         lossfn = CornerLoss_sunrgbd()
         self.log("Start Training...")
-        niter = 0
+        
         for epoch in range(epochs):
+            self.epoch = epoch + 1
             self.train_batch_loss = []
             valid_batch_loss = 0  # Resets valid loss for each epoch
-            self.epoch = epoch + 1
             for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(train_loader):
 
                 self.optimizer.zero_grad()
@@ -124,14 +126,14 @@ class Trainer:
 
                 # Plot the individual losses
 
-                self.writer.add_scalar('data/mask_loss',mask_loss.item(),niter)
-                self.writer.add_scalar('data/center_loss',center_loss.item(),niter)
-                self.writer.add_scalar('data/heading_class_loss',heading_class_loss.item(),niter)
-                self.writer.add_scalar('data/size_class_loss',size_class_loss.item(),niter)
-                self.writer.add_scalar('data/heading_residual_normalized_loss',heading_residual_normalized_loss.item(),niter)
-                self.writer.add_scalar('data/size_residual_normalized_loss',size_residual_normalized_loss.item(),niter)
-                self.writer.add_scalar('data/stage1_center_loss',stage1_center_loss.item(),niter)
-                self.writer.add_scalar('data/corner_loss',corner_loss.item(),niter)
+                self.writer.add_scalar('data/mask_loss',mask_loss.item(),batch_num)
+                self.writer.add_scalar('data/center_loss',center_loss.item(),batch_num)
+                self.writer.add_scalar('data/heading_class_loss',heading_class_loss.item(),batch_num)
+                self.writer.add_scalar('data/size_class_loss',size_class_loss.item(),batch_num)
+                self.writer.add_scalar('data/heading_residual_normalized_loss',heading_residual_normalized_loss.item(),batch_num)
+                self.writer.add_scalar('data/size_residual_normalized_loss',size_residual_normalized_loss.item(),batch_num)
+                self.writer.add_scalar('data/stage1_center_loss',stage1_center_loss.item(),batch_num)
+                self.writer.add_scalar('data/corner_loss',corner_loss.item(),batch_num)
 
 
                 if batch_num % hyp["log_freq"] ==0:
@@ -152,6 +154,7 @@ class Trainer:
                     sys.exit("Loss exploded!")
 
                 total_loss.backward()
+
                 # Implements gradient clipping if desired
                 if hyp["grad_clip"]!=0:
                     nn.utils.clip_grad_value_(self.model.parameters(), hyp["grad_clip"])
@@ -161,42 +164,15 @@ class Trainer:
                 # Keeps track of batch loss and running mean of batch losses
                 self.train_batch_loss.append(total_loss.item())
 
-                self.writer.add_scalar('data/iter_loss',total_loss.item(),niter)
-                niter +=1
+                self.writer.add_scalar('data/iter_loss',total_loss.item(),batch_num)
 
             # Stores last entry in running average of batch losses as epoch loss
             self.train_epoch_loss.append(np.mean(self.train_batch_loss))
-            self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),epoch)
+            self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),self.epoch)
 
             #print("Training for %d epoch completed", %epoch)
             self.training_evaluator.eval(train_loader)
             self.dev_evaluator.eval(val_loader)
-
-            # TODO: Replace this code with Eval code
-
-            if False:
-
-                self.model.eval()
-                #torch.autograd.set_detect_anomaly(False)
-                for batch_idx, (val_features, val_class_labels, val_labels_dict) in enumerate(val_loader):
-                    X_val = torch.FloatTensor(val_features)
-                    X_val = X_val.cuda()
-
-                    val_class_labels = one_hot_encoding(val_class_labels)
-                    Y_val = torch.FloatTensor(val_class_labels)
-                    Y_val = Y_val.cuda()
-
-                    val_logits, val_end_points = self.model(X_val, Y_val)
-
-                    for key in val_labels_dict.keys():
-                        val_labels_dict[key]=val_labels_dict[key].cuda()
-
-                    # May want to sum losses and average in a way acc. to number of points rather than simple averaging ?
-                    valid_batch_loss += lossfn(val_logits, val_labels_dict['mask_label'], val_labels_dict['center_label'],
-                                            val_labels_dict['heading_class_label'], val_labels_dict['heading_residual_label'],
-                                            val_labels_dict['size_class_label'], val_labels_dict['size_residual_label'], val_end_points)
-                # Averages valid loss
-                self.valid_loss.append(valid_batch_loss/(batch_idx+1))
 
             self.metrics["train_loss_{}".format(epoch)] = self.train_epoch_loss[-1]
             # self.metrics["valid_loss_{}".format(epoch)] = self.valid_loss[-1]
@@ -225,4 +201,3 @@ if __name__ == "__main__":
         print('Loading Model File')
         model_trainer.load_checkpoint(sys.argv[1])
     model_trainer.run(train_loader, val_loader, epochs=hyp['num_epochs'])
-

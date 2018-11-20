@@ -212,7 +212,7 @@ def convert_batch(batch):
 
 class interface_to_dataset():
     def __init__(self,*args,**kwargs):
-        self.dataset = SUN_TrainDataSet(*args, **kwargs)
+        self.dataset = SUN_Dataset(*args, **kwargs)
         self.total_size = len(self.dataset)
         indices = list(range(self.total_size))
         np.shuffle(indices)
@@ -243,12 +243,12 @@ class SUN_TrainLoader(DataLoader):
 class SUN_ValLoader(DataLoader):
 
     def __init__(self,*args,**kwargs):
-        super(SUN_TrainLoader, self).__init__(*args, **kwargs)
+        super(SUN_ValLoader, self).__init__(*args, **kwargs)
         self.collate_fn = convert_batch
 
 
 def test_dataloader():
-    train_dataset = SUN_TrainDataSet(2048)
+    train_dataset = SUN_Dataset(2048)
     train_loader = SUN_TrainLoader(train_dataset, batch_size=5, shuffle=True,num_workers=1, pin_memory=False)
 
     i = 0
@@ -264,7 +264,7 @@ def test_dataloader():
         i+=1
 
 def dataloader():
-    train_dataset = SUN_TrainDataSet(2048)
+    train_dataset = SUN_Dataset(2048)
     train_loader = SUN_TrainLoader(train_dataset, batch_size=16, shuffle=True)
     return train_loader
 # Run this to test

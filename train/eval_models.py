@@ -9,7 +9,7 @@ import matplotlib as mpl
 mpl.rc('axes', linewidth=2)
 
 import models.Mother as Mother
-from data.sunrgbd_loader import SUN_TrainDataSet,SUN_TrainLoader
+from data.sunrgbd_loader import SUN_Dataset,SUN_TrainLoader
 import models.globalVariables as glb
 from hyperParams import hyp
 from eval_det import eval_det
@@ -95,11 +95,14 @@ class Eval:
             for key in labels_dict.keys():
                 labels_dict[key] = labels_dict[key].cuda()
 
-            iou2ds, iou3ds, corners_3d_pred, corners_3d_gt = compute_box3d_iou(end_points['center'].cpu().numpy(), end_points['heading_scores'].cpu().numpy(), end_points['heading_residuals'].cpu().numpy(),
-                                               end_points['size_scores'].cpu().numpy(), end_points['size_residuals'].cpu().numpy(), labels_dict['center_label'].cpu().numpy(), labels_dict['heading_class_label'].cpu().numpy(),
-                                               labels_dict['heading_residual_label'].cpu().numpy(), labels_dict['size_class_label'].cpu().numpy(), labels_dict['size_residual_label'].cpu().numpy())
+            iou2ds, iou3ds, corners_3d_pred, corners_3d_gt = compute_box3d_iou(end_points['center'].detach().cpu().numpy(), 
+                                                end_points['heading_scores'].detach().cpu().numpy(), end_points['heading_residuals'].detach().cpu().numpy(),
+                                                end_points['size_scores'].detach().cpu().numpy(), end_points['size_residuals'].detach().cpu().numpy(), 
+                                                labels_dict['center_label'].cpu().numpy(), labels_dict['heading_class_label'].cpu().numpy(),
+                                                labels_dict['heading_residual_label'].cpu().numpy(), labels_dict['size_class_label'].cpu().numpy(), 
+                                                labels_dict['size_residual_label'].cpu().numpy())
 
-            scores = end_points['size_scores'].cpu().numpy()
+            scores = end_points['size_scores'].detach().cpu().numpy()
             rot_angles = labels_dict['rotate_angle'].cpu().numpy()
             for i, label in enumerate(class_labels):
                 self.iou_2d_per_class[label.item()] += iou2ds[i].item()
@@ -149,7 +152,7 @@ if __name__ == "__main__":
     net = Mother.Model()
     model_trainer = Eval(net)
     model_trainer.load_checkpoint(sys.argv[1])
-    train_dataset = SUN_TrainDataSet(2048)
+    train_dataset = SUN_Dataset(2048)
     val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=False, num_workers=hyp["num_workers"], pin_memory=False)
     with torch.no_grad():
         model_trainer.eval(val_loader)
