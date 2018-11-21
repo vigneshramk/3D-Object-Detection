@@ -31,14 +31,12 @@ def one_hot_encoding(class_labels, num_classes = glb.NUM_CLASS):
 
 # Training cradle
 class Trainer:
-    def __init__(self, model, optimizer, train_mode=False, eval_mode=False):
+    def __init__(self, model, optimizer):
         self.model = model.cuda()
         if hyp["parallel"]:
             self.model = nn.DataParallel(self.model)
         self.optimizer = optimizer
         self.epoch = 0
-        self.train_mode = train_mode
-        self.eval_mode = eval_mode
         self.train_batch_loss = []
         self.train_epoch_loss = []
         self.valid_loss = []
@@ -171,8 +169,8 @@ class Trainer:
             self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),self.epoch)
 
             #print("Training for %d epoch completed", %epoch)
-            self.training_evaluator.eval(train_loader)
-            self.dev_evaluator.eval(val_loader)
+            self.training_evaluator.eval(train_loader, eval_mode=False)
+            self.dev_evaluator.eval(val_loader, eval_mode=True)
 
             self.metrics["train_loss_{}".format(epoch)] = self.train_epoch_loss[-1]
             # self.metrics["valid_loss_{}".format(epoch)] = self.valid_loss[-1]

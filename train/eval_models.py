@@ -76,12 +76,14 @@ class Eval:
         pc[:,[0,2]] = np.dot(pc[:,[0,2]], np.transpose(rotmat))
         return pc
 
-    def eval(self, val_loader):
+    def eval(self, val_loader, eval_mode=True):
         gt_all = {}
         pred_all = {}
         ovthresh = 0.25
 
-        self.model.eval()
+        if eval_mode:
+            self.model.eval()
+            
         class_count = np.zeros(glb.NUM_CLASS)
         class_acc_count = np.zeros(glb.NUM_CLASS)
         for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(val_loader):
