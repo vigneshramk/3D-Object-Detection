@@ -1,0 +1,8 @@
+bookshelf 512 154 702 439 1.00 
+bookshelf 213 0 395 449 0.98 
+bookshelf 0 3 228 618 0.98 
+bookshelf 551 1 784 568 0.97 
+bookshelf 512 154 702 439 1.00 
+bookshelf 213 0 395 449 0.98 
+bookshelf 0 3 228 618 0.98 
+bookshelf 551 1 784 568 0.97 

@@ -1,0 +1,16 @@
+bookshelf 325 0 569 337 1.00 
+bookshelf 102 4 338 363 1.00 
+chair 213 154 426 442 1.00 
+bookshelf 544 12 802 434 0.99 
+chair 450 169 826 608 0.99 
+bookshelf 1 13 127 385 0.98 
+chair 0 275 144 621 0.97 
+bookshelf 193 68 508 421 0.74 
+bookshelf 325 0 569 337 1.00 
+bookshelf 102 4 338 363 1.00 
+chair 213 154 426 442 1.00 
+bookshelf 544 12 802 434 0.99 
+chair 450 169 826 608 0.99 
+bookshelf 1 13 127 385 0.98 
+chair 0 275 144 621 0.97 
+bookshelf 193 68 508 421 0.74 

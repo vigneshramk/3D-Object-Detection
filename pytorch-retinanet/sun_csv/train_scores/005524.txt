@@ -1,0 +1,6 @@
+bookshelf 127 74 402 488 1.00 
+bookshelf 579 220 751 430 1.00 
+bookshelf 370 67 587 462 1.00 
+bookshelf 127 74 402 488 1.00 
+bookshelf 579 220 751 430 1.00 
+bookshelf 370 67 587 462 1.00 

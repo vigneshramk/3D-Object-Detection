@@ -1,0 +1,10 @@
+bed 4 120 568 603 1.00 
+night_stand 183 212 276 299 1.00 
+night_stand 504 270 675 449 1.00 
+night_stand 104 170 178 252 1.00 
+dresser 696 168 832 611 0.98 
+bed 4 120 568 603 1.00 
+night_stand 183 212 276 299 1.00 
+night_stand 504 270 675 449 1.00 
+night_stand 104 170 178 252 1.00 
+dresser 696 168 832 611 0.98 

@@ -1,0 +1,10 @@
+night_stand 310 305 493 561 1.00 
+night_stand 196 228 285 334 1.00 
+night_stand 313 102 528 341 1.00 
+dresser 232 163 406 450 0.99 
+night_stand 221 186 296 319 0.63 
+night_stand 310 305 493 561 1.00 
+night_stand 196 228 285 334 1.00 
+night_stand 313 102 528 341 1.00 
+dresser 232 163 406 450 0.99 
+night_stand 221 186 296 319 0.63 
