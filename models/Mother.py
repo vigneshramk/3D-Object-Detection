@@ -4,12 +4,17 @@ import time
 import models.Instance_3D_seg_v1 as ThreeDseg
 import models.ThreeDboxNet_v1 as boxNet
 from models.TNet import TNet
+from models.VoxelNet import VoxelNet
+import models.globalVariables as glb
 import cv2
 
 class Model(nn.Module):
     def __init__(self):
         super().__init__()
-        self.ThreeDseg = ThreeDseg.InstanceSegNet()
+        if glb.VOXEL_NET:
+            self.ThreeDseg = VoxelNet()
+        else:
+            self.ThreeDseg = ThreeDseg.InstanceSegNet()
         self.TNet = TNet()
         self.boxNet = boxNet.Model(num_in_channels=3, num_input_to_fc=(512+10), activation=nn.ReLU, bn_decay=0)
 
