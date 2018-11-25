@@ -7,7 +7,7 @@ class Conv2dV(nn.Module):
 
     def __init__(self, in_channels, out_channels, k, s, p, activation=True, batch_norm=True):
         super(Conv2dV, self).__init__()
-        self.conv = nn.Conv2dV(in_channels, out_channels, kernel_size=k, stride=s, padding=p)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=k, stride=s, padding=p)
         if batch_norm:
             self.bn = nn.BatchNorm2d(out_channels)
         else:
@@ -15,7 +15,7 @@ class Conv2dV(nn.Module):
 
         if activation:
             self.act = nn.ReLU(inplace=True)
-        else
+        else:
             self.act = None
 
     def forward(self,x):
@@ -34,7 +34,7 @@ class Conv3dV(nn.Module):
 
     def __init__(self, in_channels, out_channels, k, s, p, batch_norm=True):
         super(Conv3dV, self).__init__()
-        self.conv = nn.Conv3dV(in_channels, out_channels, kernel_size=k, stride=s, padding=p)
+        self.conv = nn.Conv3d(in_channels, out_channels, kernel_size=k, stride=s, padding=p)
         self.act = nn.ReLU(inplace=True)
         if batch_norm:
             self.bn = nn.BatchNorm3d(out_channels)
@@ -80,7 +80,7 @@ class VFE(nn.Module):
         pwf = self.fcn(x)
 
         #locally aggregated feature
-        laf = torch.max(pwf, 1)[0].unsqueeze(1).repeat(1, cfg.T, 1)
+        laf = torch.max(pwf, 1)[0].unsqueeze(1).repeat(1, 2048, 1)
 
         # point-wise concat feature
         pwcf = torch.cat((pwf, laf), dim=2)
@@ -95,7 +95,7 @@ class SVFE(nn.Module):
 
     def __init__(self):
         super(SVFE, self).__init__()
-        self.vfe_1 = VFE(7,32)
+        self.vfe_1 = VFE(4,32)
         self.vfe_2 = VFE(32,128)
         self.fcn = FCN(128,128)
 
@@ -105,17 +105,15 @@ class SVFE(nn.Module):
         x = self.vfe_2(x, mask)
         x = self.fcn(x)
 
-        # element-wise max pooling
-        x = torch.max(x,1)[0]
-        return x
+        return x.transpose(2, 1).unsqueeze(-1)
 
 # Convolutional Middle Layer
 class CML(nn.Module):
     def __init__(self):
         super(CML, self).__init__()
-        self.conv3d_1 = Conv3dV(128, 64, 3, s=(2, 1, 1), p=(1, 1, 1))
-        self.conv3d_2 = Conv3dV(64, 64, 3, s=(1, 1, 1), p=(0, 1, 1))
-        self.conv3d_3 = Conv3dV(64, 64, 3, s=(2, 1, 1), p=(1, 1, 1))
+        self.conv3d_1 = Conv2dV(128, 64, 3, s=1, p=1)
+        self.conv3d_2 = Conv2dV(64, 64, 3, s=1, p=1)
+        self.conv3d_3 = Conv2dV(64, 64, 3, s=1, p=1)
 
     def forward(self, x):
         x = self.conv3d_1(x)
@@ -126,8 +124,8 @@ class CML(nn.Module):
 
 class SegNet(nn.Module):
     def __init__(self):
-        super(RPN, self).__init__()
-        self.block_1 = [Conv2dV(128, 128, 3, 2, 1)]
+        super(SegNet, self).__init__()
+        self.block_1 = [Conv2dV(64, 128, 3, 2, 1)]
         self.block_1 += [Conv2dV(128, 128, 3, 1, 1) for _ in range(3)]
         self.block_1 = nn.Sequential(*self.block_1)
 
@@ -136,15 +134,15 @@ class SegNet(nn.Module):
         self.block_2 = nn.Sequential(*self.block_2)
 
         self.block_3 = [Conv2dV(128, 256, 3, 2, 1)]
-        self.block_3 += [nn.Conv2dV(256, 256, 3, 1, 1) for _ in range(5)]
+        self.block_3 += [nn.Conv2d(256, 256, 3, 1, 1) for _ in range(5)]
         self.block_3 = nn.Sequential(*self.block_3)
 
-        self.deconv_1 = nn.Sequential(nn.ConvTranspose2d(256, 256, 4, 4, 0), nn.BatchNorm2d(256))
-        self.deconv_2 = nn.Sequential(nn.ConvTranspose2d(128, 256, 2, 2, 0), nn.BatchNorm2d(256))
-        self.deconv_3 = nn.Sequential(nn.ConvTranspose2d(128, 256, 1, 1, 0), nn.BatchNorm2d(256))
+        self.deconv_1 = nn.Sequential(nn.ConvTranspose2d(256, 256, 4*2, 4*2, 0), nn.BatchNorm2d(256))
+        self.deconv_2 = nn.Sequential(nn.ConvTranspose2d(128, 256, 2*2, 2*2, 0), nn.BatchNorm2d(256))
+        self.deconv_3 = nn.Sequential(nn.ConvTranspose2d(128, 256, 1*2, 1*2, 0), nn.BatchNorm2d(256))
         #self.deconv_3 = nn.Sequential(nn.ConvTranspose2d(128, 256, 3, 1, 0), nn.BatchNorm2d(256))
 
-        self.score_head = Conv2dV(768, cfg.anchors_per_position, 1, 1, 0, activation=False, batch_norm=False)
+        self.score_head = Conv2dV(256, 2, (1, 14), 1, 0, activation=False, batch_norm=False)
 
     def forward(self,x):
         x = self.block_1(x)
@@ -159,7 +157,7 @@ class SegNet(nn.Module):
         x_1 = self.deconv_2(x_skip_2)
         x_2 = self.deconv_3(x_skip_1)
 
-        x = torch.cat((x_0,x_1,x_2),1)
+        x = torch.cat((x_0,x_1,x_2), dim=-1)
 
         return self.score_head(x)
 
@@ -177,6 +175,6 @@ class VoxelNet(nn.Module):
         # convolutional middle network
         cml_out = self.cml(vwfs)
 
-        logits = self.rpn(cml_out)
+        logits = torch.squeeze(self.seg(cml_out))
 
-        return logits
+        return logits.transpose(2, 1)
