@@ -98,6 +98,7 @@ class Trainer:
         #torch.autograd.set_detect_anomaly(True)
         lossfn = CornerLoss_sunrgbd()
         self.log("Start Training...")
+        niter = 0
         
         for epoch in range(epochs):
             self.epoch = epoch + 1
@@ -125,14 +126,14 @@ class Trainer:
 
                 # Plot the individual losses
 
-                self.writer.add_scalar('data/mask_loss',mask_loss.item(),batch_num)
-                self.writer.add_scalar('data/center_loss',center_loss.item(),batch_num)
-                self.writer.add_scalar('data/heading_class_loss',heading_class_loss.item(),batch_num)
-                self.writer.add_scalar('data/size_class_loss',size_class_loss.item(),batch_num)
-                self.writer.add_scalar('data/heading_residual_normalized_loss',heading_residual_normalized_loss.item(),batch_num)
-                self.writer.add_scalar('data/size_residual_normalized_loss',size_residual_normalized_loss.item(),batch_num)
-                self.writer.add_scalar('data/stage1_center_loss',stage1_center_loss.item(),batch_num)
-                self.writer.add_scalar('data/corner_loss',corner_loss.item(),batch_num)
+                self.writer.add_scalar('data/mask_loss',mask_loss.item(),niter)
+                self.writer.add_scalar('data/center_loss',center_loss.item(),niter)
+                self.writer.add_scalar('data/heading_class_loss',heading_class_loss.item(),niter)
+                self.writer.add_scalar('data/size_class_loss',size_class_loss.item(),niter)
+                self.writer.add_scalar('data/heading_residual_normalized_loss',heading_residual_normalized_loss.item(),niter)
+                self.writer.add_scalar('data/size_residual_normalized_loss',size_residual_normalized_loss.item(),niter)
+                self.writer.add_scalar('data/stage1_center_loss',stage1_center_loss.item(),niter)
+                self.writer.add_scalar('data/corner_loss',corner_loss.item(),niter)
 
 
                 if batch_num % hyp["log_freq"] ==0:
@@ -163,16 +164,16 @@ class Trainer:
                 # Keeps track of batch loss and running mean of batch losses
                 self.train_batch_loss.append(total_loss.item())
 
-                self.writer.add_scalar('data/iter_loss',total_loss.item(),batch_num)
+                self.writer.add_scalar('data/iter_loss',total_loss.item(),niter)
+                niter += 1
 
             # Stores last entry in running average of batch losses as epoch loss
             self.train_epoch_loss.append(np.mean(self.train_batch_loss))
             self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),self.epoch)
 
-            print('Epoch [%d]: Dumping statistics' % (epoch+1))
+            print('Epoch [%d]: Dumping statistics' % (self.epoch))
             with torch.no_grad():
-                self.model.eval()
-                self.training_evaluator.eval(train_loader, eval_mode=False)
+                self.training_evaluator.eval(train_loader, eval_mode=True)
                 self.dev_evaluator.eval(val_loader, eval_mode=True)
 
             self.metrics["train_loss_{}".format(epoch)] = self.train_epoch_loss[-1]
