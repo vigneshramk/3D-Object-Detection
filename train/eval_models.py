@@ -42,12 +42,6 @@ class Eval:
         self.iou_3d_per_class = torch.zeros(glb.NUM_CLASS)          # (B, ) -- No. of Classes
         self.valid_loss = []
         self.metrics = {}
-
-        self.log_dir = 'log_directory/' + hyp["log_dir"]
-        # Create the results directory
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
-
         self.model_dir = '../results/' + hyp["test_name"]
 
         # Create the results directory
@@ -83,7 +77,7 @@ class Eval:
 
         if eval_mode:
             self.model.eval()
-            
+
         class_count = np.zeros(glb.NUM_CLASS)
         class_acc_count = np.zeros(glb.NUM_CLASS)
         for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(val_loader):
@@ -97,11 +91,11 @@ class Eval:
             for key in labels_dict.keys():
                 labels_dict[key] = labels_dict[key].cuda()
 
-            iou2ds, iou3ds, corners_3d_pred, corners_3d_gt = compute_box3d_iou(end_points['center'].detach().cpu().numpy(), 
+            iou2ds, iou3ds, corners_3d_pred, corners_3d_gt = compute_box3d_iou(end_points['center'].detach().cpu().numpy(),
                                                 end_points['heading_scores'].detach().cpu().numpy(), end_points['heading_residuals'].detach().cpu().numpy(),
-                                                end_points['size_scores'].detach().cpu().numpy(), end_points['size_residuals'].detach().cpu().numpy(), 
+                                                end_points['size_scores'].detach().cpu().numpy(), end_points['size_residuals'].detach().cpu().numpy(),
                                                 labels_dict['center_label'].cpu().numpy(), labels_dict['heading_class_label'].cpu().numpy(),
-                                                labels_dict['heading_residual_label'].cpu().numpy(), labels_dict['size_class_label'].cpu().numpy(), 
+                                                labels_dict['heading_residual_label'].cpu().numpy(), labels_dict['size_class_label'].cpu().numpy(),
                                                 labels_dict['size_residual_label'].cpu().numpy())
 
             scores = end_points['size_scores'].detach().cpu().numpy()
@@ -157,4 +151,5 @@ if __name__ == "__main__":
     train_dataset = SUN_Dataset(2048)
     val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=False, num_workers=hyp["num_workers"], pin_memory=False)
     with torch.no_grad():
+        net.eval()
         model_trainer.eval(val_loader)
