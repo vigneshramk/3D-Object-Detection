@@ -58,8 +58,8 @@ class Trainer:
         # Create the results directory
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
-        self.training_evaluator = Eval(net)
-        self.dev_evaluator = Eval(net)
+        self.training_evaluator = Eval(self.model)
+        self.dev_evaluator = Eval(self.model)
 
 
     def save_checkpoint(self):
@@ -103,6 +103,7 @@ class Trainer:
             self.epoch = epoch + 1
             self.train_batch_loss = []
             valid_batch_loss = 0  # Resets valid loss for each epoch
+            self.model.train()
             for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(train_loader):
 
                 self.optimizer.zero_grad()
@@ -168,9 +169,11 @@ class Trainer:
             self.train_epoch_loss.append(np.mean(self.train_batch_loss))
             self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),self.epoch)
 
-            #print("Training for %d epoch completed", %epoch)
-            self.training_evaluator.eval(train_loader, eval_mode=False)
-            self.dev_evaluator.eval(val_loader, eval_mode=True)
+            print('Epoch [%d]: Dumping statistics' % (epoch+1))
+            with torch.no_grad():
+                self.model.eval()
+                self.training_evaluator.eval(train_loader, eval_mode=False)
+                self.dev_evaluator.eval(val_loader, eval_mode=True)
 
             self.metrics["train_loss_{}".format(epoch)] = self.train_epoch_loss[-1]
             # self.metrics["valid_loss_{}".format(epoch)] = self.valid_loss[-1]

@@ -42,12 +42,6 @@ class Eval:
         self.iou_3d_per_class = torch.zeros(glb.NUM_CLASS)          # (B, ) -- No. of Classes
         self.valid_loss = []
         self.metrics = {}
-
-        self.log_dir = 'log_directory/' + hyp["log_dir"]
-        # Create the results directory
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
-
         self.model_dir = '../results/' + hyp["test_name"]
 
         # Create the results directory
@@ -157,4 +151,5 @@ if __name__ == "__main__":
     train_dataset = SUN_Dataset(2048)
     val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=False, num_workers=hyp["num_workers"], pin_memory=False)
     with torch.no_grad():
+        net.eval()
         model_trainer.eval(val_loader)
