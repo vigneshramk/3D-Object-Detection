@@ -196,8 +196,8 @@ if __name__ == "__main__":
     train_dataset = SUN_Dataset('train',2048)
     val_dataset = SUN_Dataset('val',2048)
 
-    train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
-    val_loader = SUN_ValLoader(val_dataset, batch_size=hyp["batch_size"], shuffle=True,num_workers=hyp["num_workers"], pin_memory=False)
+    train_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=True, num_workers=hyp["num_workers"], pin_memory=False)
+    val_loader = SUN_ValLoader(val_dataset, batch_size=hyp["batch_size"], shuffle=False, num_workers=hyp["num_workers"], pin_memory=False)
 
     if len(sys.argv) == 2:
         print('Loading Model File')
