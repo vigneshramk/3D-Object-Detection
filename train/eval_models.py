@@ -70,7 +70,7 @@ class Eval:
         pc[:,[0,2]] = np.dot(pc[:,[0,2]], np.transpose(rotmat))
         return pc
 
-    def eval(self, val_loader, eval_mode=True):
+    def eval(self, loader, eval_mode=True):
         gt_all = {}
         pred_all = {}
         ovthresh = 0.25
@@ -80,7 +80,7 @@ class Eval:
             
         class_count = np.zeros(glb.NUM_CLASS)
         class_acc_count = np.zeros(glb.NUM_CLASS)
-        for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(val_loader):
+        for batch_num, (img_id, features, class_labels, labels_dict) in enumerate(loader):
             X = torch.FloatTensor(features).requires_grad_()
             X = X.cuda()
             class_labels_one_hot = one_hot_encoding(class_labels)
@@ -141,15 +141,15 @@ class Eval:
 
 # Runs as a script when called
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        raise ValueError('Need Model File.')
+    if len(sys.argv) < 3:
+        raise ValueError('Need Model File and "train" or "valid" as arguments')
 
     # Instantiate models
     net = Mother.Model()
     model_trainer = Eval(net)
     model_trainer.load_checkpoint(sys.argv[1])
-    train_dataset = SUN_Dataset(2048)
-    val_loader = SUN_TrainLoader(train_dataset, batch_size=hyp["batch_size"], shuffle=False, num_workers=hyp["num_workers"], pin_memory=False)
+    dataset = SUN_Dataset(sys.argv[2], 2048)
+    loader = SUN_TrainLoader(dataset, batch_size=hyp["batch_size"], shuffle=False, num_workers=hyp["num_workers"], pin_memory=False)
     with torch.no_grad():
         net.eval()
-        model_trainer.eval(val_loader)
+        model_trainer.eval(loader)
