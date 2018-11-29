@@ -95,7 +95,7 @@ class SVFE(nn.Module):
 
     def __init__(self):
         super(SVFE, self).__init__()
-        self.vfe_1 = VFE(4,32)
+        self.vfe_1 = VFE(7,32)
         self.vfe_2 = VFE(32,128)
         self.fcn = FCN(128,128)
 
@@ -184,7 +184,7 @@ class VoxelNet(nn.Module):
 
         return logits.transpose(2, 1)
 
-   def augument_point_cloud(self, point_cloud):
-       mean = torch.mean(point_cloud[:, :, :-1], dim=1)
-       mean = mean.unsqueeze(1).expand(-1, point_cloud.size(1), -1)
-       return torch.cat((point_cloud, point_cloud[:, :, :-1] - mean), dim=2)
+    def augument_point_cloud(self, point_cloud):
+        mean = torch.mean(point_cloud[:, :, :-1], dim=1)
+        mean = mean.unsqueeze(1).expand(-1, point_cloud.size(1), -1)
+        return torch.cat((point_cloud, point_cloud[:, :, :-1] - mean), dim=2)

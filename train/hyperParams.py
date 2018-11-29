@@ -3,10 +3,10 @@
 hyp = {
 "num_epochs": 50,
 "lr": 1e-5,
-"batch_size": 16,
+"batch_size": 32,
 "num_workers":1,
 "grad_clip": 10,
-"optim_reg": 1e-5,
+"optim_reg": 1e-3,
 "model_fname": "Train_v1",
 "hyp_fname": "Hyp_v1",
 "log_freq": 25,
