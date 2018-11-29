@@ -3,7 +3,7 @@
 hyp = {
 "num_epochs": 50,
 "lr": 1e-5,
-"batch_size": 32,
+"batch_size": 16,
 "num_workers":1,
 "grad_clip": 10,
 "optim_reg": 1e-5,
@@ -11,7 +11,7 @@ hyp = {
 "hyp_fname": "Hyp_v1",
 "log_freq": 25,
 "gpu":"5,6,7",
-"log_dir":"trainVal_loss2",
-"test_name":"trainVal_loss2",
+"log_dir":"trainVoxel_loss",
+"test_name":"trainVoxelVal_loss",
 "parallel":False
 }
