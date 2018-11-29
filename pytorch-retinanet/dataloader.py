@@ -204,8 +204,9 @@ class CSVDataset(Dataset):
     def __getitem__(self, idx):
 
         img = self.load_image(idx)
-        name =  self.image_names[idx].strip('/home/kvr/Documents/Projects/3D-Object-Detection/2d_data/training/image/').strip('.jpg')
+        name =  self.image_names[idx].strip('/home/vignesh/Projects/3D-Object-Detection/2d_data/training/image/').strip('.jpg')
         name = int(name)
+        print(name)
         annot = self.load_annotations(idx)
         sample = {'img': img, 'annot': annot}
         if self.transform:
