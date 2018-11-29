@@ -4,8 +4,8 @@ import utils_sun
 
 type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
 
-# root_dir = '/home/vignesh/Projects/3D-Object-Detection/2d_data'
-root_dir = '/home/kvr/Documents/Projects/3D-Object-Detection/2d_data/training'
+root_dir = '/home/vignesh/Projects/3D-Object-Detection/2d_data/training'
+#root_dir = '/home/kvr/Documents/Projects/3D-Object-Detection/2d_data/training'
 
 image_dir = os.path.join(root_dir, 'image')
 label_dir = os.path.join(root_dir, 'label_dimension')

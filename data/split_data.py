@@ -41,8 +41,8 @@ def split_dataset():
     frustum_angle_list = np.array(frustum_angle_list)
 
 
-    save_zipped_pickle([id_list[ti].tolist(),box2d_list[ti].tolist(),box3d_list[ti].tolist(),input_list[ti].tolist(),label_list[ti].tolist(),type_list[ti].tolist(),heading_list[ti].tolist(),size_list[ti].tolist(),frustum_angle_list[ti].tolist()],'sunrgbd_train.pickle')
-    save_zipped_pickle([id_list[vi].tolist(),box2d_list[vi].tolist(),box3d_list[vi].tolist(),input_list[vi].tolist(),label_list[vi].tolist(),type_list[vi].tolist(),heading_list[vi].tolist(),size_list[vi].tolist(),frustum_angle_list[vi].tolist()],'sunrgbd_val.pickle')
+    save_zipped_pickle([id_list[ti].tolist(),box2d_list[ti].tolist(),box3d_list[ti].tolist(),input_list[ti].tolist(),label_list[ti].tolist(),type_list[ti].tolist(),heading_list[ti].tolist(),size_list[ti].tolist(),frustum_angle_list[ti].tolist()],'sunrgbd_retina_train.pickle')
+    save_zipped_pickle([id_list[vi].tolist(),box2d_list[vi].tolist(),box3d_list[vi].tolist(),input_list[vi].tolist(),label_list[vi].tolist(),type_list[vi].tolist(),heading_list[vi].tolist(),size_list[vi].tolist(),frustum_angle_list[vi].tolist()],'sunrgbd_retina_val.pickle')
 
 split_dataset()
 

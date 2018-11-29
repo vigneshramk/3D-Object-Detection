@@ -3,10 +3,10 @@ import gzip
 import numpy as np
 
 # Make a folder data inside the 3D-Object-Detection folder and put the pickle file inside it
-SUN_PATH = '/home/ubuntu/DL_Project/data'
-# SUN_PATH = './../data'
-SUN_TRAIN_FILE = 'sunrgbd_train.pickle'
-SUN_VAL_FILE = 'sunrgbd_val.pickle'
+#SUN_PATH = '/home/ubuntu/DL_Project/data'
+SUN_PATH = './../data'
+SUN_TRAIN_FILE = 'sunrgbd_retina_train.pickle'
+SUN_VAL_FILE = 'sunrgbd_retina_val.pickle'
 
 type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
 
