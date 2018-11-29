@@ -169,6 +169,8 @@ class VoxelNet(nn.Module):
         self.seg = SegNet()
 
     def forward(self, point_cloud, one_hot_vec):
+        point_cloud = self.augument_point_cloud(point_cloud)
+
         # feature learning network
         vwfs = self.svfe(point_cloud)
 
@@ -181,3 +183,8 @@ class VoxelNet(nn.Module):
         logits = torch.squeeze(self.seg(cml_out))
 
         return logits.transpose(2, 1)
+
+   def augument_point_cloud(self, point_cloud):
+       mean = torch.mean(point_cloud[:, :, :-1], dim=1)
+       mean = mean.unsqueeze(1).expand(-1, point_cloud.size(1), -1)
+       return torch.cat((point_cloud, point_cloud[:, :, :-1] - mean), dim=2)
