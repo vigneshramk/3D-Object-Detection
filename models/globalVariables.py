@@ -4,6 +4,7 @@ import torch
 NUM_HEADING_BIN = 12
 NUM_SIZE_CLUSTER = 10
 NUM_CLASS = 10
+AUGUMENT = False
 
 
 type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}

@@ -31,7 +31,10 @@ class InstanceSegNet(nn.Module):
     super(InstanceSegNet, self).__init__()
     bn_momentum = (1 - bn_decay) if bn_decay is not None else 0.1
 
-    self.conv1 = nn.Conv2d(4, 64, (1, 1), stride=(1, 1), padding=(0,0))
+    if glb.AUGUMENT:
+      self.conv1 = nn.Conv2d(7, 64, (1, 1), stride=(1, 1), padding=(0,0))
+    else:
+      self.conv1 = nn.Conv2d(4, 64, (1, 1), stride=(1, 1), padding=(0,0))
     self.bn1 = nn.BatchNorm2d(64, momentum = bn_momentum)
 
     self.conv2 = nn.Conv2d(64, 64, (1, 1), stride=(1, 1), padding=(0,0))
@@ -76,6 +79,9 @@ class InstanceSegNet(nn.Module):
         # nn.init.constant_(m.bias, 0)
 
   def forward(self, point_cloud, one_hot_vec):
+    if glb.AUGUMENT:
+      point_cloud = self.augument_point_cloud(point_cloud)
+
     batch_size = point_cloud.size()[0]
     point_cloud = point_cloud.permute(0, 2, 1) # 3D Tensor: B x N x C -> B x C x N
     num_points = point_cloud.size()[2]
@@ -105,3 +111,9 @@ class InstanceSegNet(nn.Module):
     logits = torch.squeeze(logits, 3)        # Final output Tensor size: B x 2 x N
 
     return logits.permute(0, 2, 1)
+
+  def augument_point_cloud(self, point_cloud):
+    ''' Appends difference between centroid and the point to each point. '''
+    mean = torch.mean(point_cloud[:, :, :-1], dim=1)
+    mean = mean.unsqueeze(1).expand(-1, point_cloud.size(1), -1)
+    return torch.cat((point_cloud, point_cloud[:, :, :-1] - mean), dim=2)
