@@ -27,7 +27,8 @@ import csv_eval
 
 assert torch.__version__.split('.')[1] == '4'
 
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1,3,4"
+
+#os.environ["CUDA_VISIBLE_DEVICES"]="3,4,5,6,7"
 
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
