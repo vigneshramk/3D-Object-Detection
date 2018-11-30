@@ -14,8 +14,8 @@ from tensorboardX import SummaryWriter
 from eval_models import Eval
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
-use_cuda = torch.cuda.is_available()
-print('Cuda')
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print('Using %s' % DEVICE)
 
 
 # Function for transforming interger labels to one-hot vectors

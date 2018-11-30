@@ -16,8 +16,8 @@ from eval_det import eval_det
 from train.roi_seg_box3d_dataset import compute_box3d_iou
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
-use_cuda = torch.cuda.is_available()
-print('Cuda')
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print('Using %s' % DEVICE)
 classname_list = ['bed','table','sofa','chair','toilet','desk','dresser','night_stand','bookshelf','bathtub']
 
 # Function for transforming interger labels to one-hot vectors
