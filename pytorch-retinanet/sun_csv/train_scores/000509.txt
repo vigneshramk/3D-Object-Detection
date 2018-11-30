@@ -1,4 +1,0 @@
-bookshelf 114 0 469 606 1.00 
-bookshelf 438 0 608 463 1.00 
-bookshelf 114 0 469 606 1.00 
-bookshelf 438 0 608 463 1.00 

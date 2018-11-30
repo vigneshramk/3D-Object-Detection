@@ -1,8 +1,0 @@
-dresser 535 46 821 466 1.00 
-bed 1 6 374 606 1.00 
-night_stand 365 188 541 354 1.00 
-night_stand 0 108 55 266 0.96 
-dresser 535 46 821 466 1.00 
-bed 1 6 374 606 1.00 
-night_stand 365 188 541 354 1.00 
-night_stand 0 108 55 266 0.96 

@@ -1,6 +1,0 @@
-bookshelf 665 11 839 287 1.00 
-bookshelf 337 0 517 218 1.00 
-bookshelf 72 0 336 251 1.00 
-bookshelf 665 11 839 287 1.00 
-bookshelf 337 0 517 218 1.00 
-bookshelf 72 0 336 251 1.00 

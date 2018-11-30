@@ -1,8 +1,0 @@
-bed 189 21 793 579 1.00 
-night_stand 474 196 606 303 1.00 
-night_stand 0 174 198 345 1.00 
-night_stand 770 245 836 448 0.95 
-bed 189 21 793 579 1.00 
-night_stand 474 196 606 303 1.00 
-night_stand 0 174 198 345 1.00 
-night_stand 770 245 836 448 0.95 

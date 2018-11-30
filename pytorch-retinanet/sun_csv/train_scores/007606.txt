@@ -1,6 +1,0 @@
-bookshelf 392 229 665 609 1.00 
-bookshelf 257 222 435 613 0.99 
-bookshelf 138 0 354 579 0.96 
-bookshelf 392 229 665 609 1.00 
-bookshelf 257 222 435 613 0.99 
-bookshelf 138 0 354 579 0.96 

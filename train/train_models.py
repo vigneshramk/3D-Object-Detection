@@ -172,9 +172,9 @@ class Trainer:
             self.writer.add_scalar('data/epoch_loss',np.mean(self.train_batch_loss),self.epoch)
 
             print('Epoch [%d]: Dumping statistics' % (self.epoch))
-            with torch.no_grad():
-                self.training_evaluator.eval(train_loader, eval_mode=True)
-                self.dev_evaluator.eval(val_loader, eval_mode=True)
+            #with torch.no_grad():
+                #self.training_evaluator.eval(train_loader, eval_mode=True)
+                #self.dev_evaluator.eval(val_loader, eval_mode=True)
 
             self.metrics["train_loss_{}".format(epoch)] = self.train_epoch_loss[-1]
             # self.metrics["valid_loss_{}".format(epoch)] = self.valid_loss[-1]

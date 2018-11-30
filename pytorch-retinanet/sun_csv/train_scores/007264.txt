@@ -1,4 +1,0 @@
-bookshelf 395 9 597 270 1.00 
-bookshelf 661 0 800 270 1.00 
-bookshelf 395 9 597 270 1.00 
-bookshelf 661 0 800 270 1.00 

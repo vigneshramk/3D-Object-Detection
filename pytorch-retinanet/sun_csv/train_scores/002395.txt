@@ -1,4 +1,0 @@
-bookshelf 256 1 475 441 1.00 
-bookshelf 24 7 188 350 1.00 
-bookshelf 256 1 475 441 1.00 
-bookshelf 24 7 188 350 1.00 

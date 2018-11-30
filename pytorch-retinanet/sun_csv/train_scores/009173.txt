@@ -1,6 +1,0 @@
-bed 5 3 730 610 1.00 
-night_stand 80 76 267 216 1.00 
-night_stand 650 92 814 347 1.00 
-bed 5 3 730 610 1.00 
-night_stand 80 76 267 216 1.00 
-night_stand 650 92 814 347 1.00 

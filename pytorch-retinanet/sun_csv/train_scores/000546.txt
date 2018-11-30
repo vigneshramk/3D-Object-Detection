@@ -1,6 +1,0 @@
-bookshelf 2 1 213 263 1.00 
-bookshelf 295 5 840 345 1.00 
-chair 579 124 832 570 0.99 
-bookshelf 2 1 213 263 1.00 
-bookshelf 295 5 840 345 1.00 
-chair 579 124 832 570 0.99 
