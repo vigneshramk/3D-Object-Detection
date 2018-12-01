@@ -117,7 +117,7 @@ class Eval:
         for i in range(glb.NUM_CLASS):
             self.iou_2d_per_class[i] = self.iou_2d_per_class[i]/float(class_count[i])
             self.iou_3d_per_class[i] = self.iou_3d_per_class[i]/float(class_count[i])
-            print('%s: %f' % (classname_list[i], class_acc_count[i]/float(class_count[i])))
+            #print('%s: %f' % (classname_list[i], class_acc_count[i]/float(class_count[i])))
 
         print('iou2d: ', self.iou_2d_per_class)
         print('iou3d: ', self.iou_3d_per_class)
