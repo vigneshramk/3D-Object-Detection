@@ -32,24 +32,26 @@ class InstanceSegNet(nn.Module):
     bn_momentum = (1 - bn_decay) if bn_decay is not None else 0.1
 
     if glb.AUGUMENT:
-      self.conv1 = nn.Conv2d(7, 64, (1, 1), stride=(1, 1), padding=(0,0))
+      scale = 2
+      self.conv1 = nn.Conv2d(7, 64*scale, (1, 1), stride=(1, 1), padding=(0,0))
     else:
+      scale = 1
       self.conv1 = nn.Conv2d(4, 64, (1, 1), stride=(1, 1), padding=(0,0))
-    self.bn1 = nn.BatchNorm2d(64, momentum = bn_momentum)
+    self.bn1 = nn.BatchNorm2d(64*scale, momentum = bn_momentum)
 
-    self.conv2 = nn.Conv2d(64, 64, (1, 1), stride=(1, 1), padding=(0,0))
-    self.bn2 = nn.BatchNorm2d(64, momentum = bn_momentum)
+    self.conv2 = nn.Conv2d(64*scale, 64*scale, (1, 1), stride=(1, 1), padding=(0,0))
+    self.bn2 = nn.BatchNorm2d(64*scale, momentum = bn_momentum)
 
-    self.conv3 = nn.Conv2d(64, 64, [1,1], stride=(1, 1), padding=(0,0))
-    self.bn3 = nn.BatchNorm2d(64, momentum = bn_momentum)
+    self.conv3 = nn.Conv2d(64*scale, 64*scale, [1,1], stride=(1, 1), padding=(0,0))
+    self.bn3 = nn.BatchNorm2d(64*scale, momentum = bn_momentum)
 
-    self.conv4 = nn.Conv2d(64, 128, (1, 1), stride=(1, 1), padding=(0,0))
-    self.bn4 = nn.BatchNorm2d(128, momentum = bn_momentum)
+    self.conv4 = nn.Conv2d(64*scale, 128*scale, (1, 1), stride=(1, 1), padding=(0,0))
+    self.bn4 = nn.BatchNorm2d(128*scale, momentum = bn_momentum)
 
-    self.conv5 = nn.Conv2d(128, 1024, (1, 1), stride=(1, 1), padding=(0,0))
+    self.conv5 = nn.Conv2d(128*scale, 1024, (1, 1), stride=(1, 1), padding=(0,0))
     self.bn5 = nn.BatchNorm2d(1024, momentum = bn_momentum)
 
-    self.conv6 = nn.Conv2d((1088 + num_classes), 512, (1, 1), stride=(1, 1), padding=(0,0))
+    self.conv6 = nn.Conv2d((1024 + 64*scale + num_classes), 512, (1, 1), stride=(1, 1), padding=(0,0))
     self.bn6 = nn.BatchNorm2d(512, momentum = bn_momentum)
 
     self.conv7 = nn.Conv2d(512, 256, (1, 1), stride=(1, 1), padding=(0,0))
@@ -116,4 +118,4 @@ class InstanceSegNet(nn.Module):
     ''' Appends difference between centroid and the point to each point. '''
     mean = torch.mean(point_cloud[:, :, :-1], dim=1)
     mean = mean.unsqueeze(1).expand(-1, point_cloud.size(1), -1)
-    return torch.cat((point_cloud, point_cloud[:, :, :-1] - mean), dim=2)
+    return torch.cat((point_cloud, torch.abs(point_cloud[:, :, :-1] - mean)), dim=2)
