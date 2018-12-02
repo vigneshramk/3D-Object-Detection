@@ -203,10 +203,10 @@ class CSVDataset(Dataset):
 
     def __getitem__(self, idx):
 
+
         name =  self.image_names[idx].strip('/serverdata/vignesh/3D-Obj/2d_data/training/image/').strip('.jpg')    
         name = int(name)    
         print(name)
-
         img = self.load_image(idx)
         annot = self.load_annotations(idx)
         sample = {'img': img, 'annot': annot}

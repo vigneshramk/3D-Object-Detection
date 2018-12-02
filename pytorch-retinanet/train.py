@@ -28,7 +28,7 @@ import csv_eval
 assert torch.__version__.split('.')[1] == '4'
 
 
-os.environ["CUDA_VISIBLE_DEVICES"]="2,3,4,5,6"
+os.environ["CUDA_VISIBLE_DEVICES"]="4,6,7"
 
 
 print('CUDA available: {}'.format(torch.cuda.is_available()))
@@ -78,8 +78,8 @@ def main(args=None):
 	else:
 		raise ValueError('Dataset type not understood (must be csv or coco), exiting.')
 
-	sampler = AspectRatioBasedSampler(dataset_train, batch_size=20, drop_last=False)
-	dataloader_train = DataLoader(dataset_train, num_workers=5, collate_fn=collater, batch_sampler=sampler)
+	sampler = AspectRatioBasedSampler(dataset_train, batch_size=12, drop_last=False)
+	dataloader_train = DataLoader(dataset_train, num_workers=4, collate_fn=collater, batch_sampler=sampler)
 
 	if dataset_val is not None:
 		sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
@@ -173,7 +173,8 @@ def main(args=None):
 		
 		scheduler.step(np.mean(epoch_loss))	
 
-		torch.save(retinanet.module, '{}_retinanet_{}.pt'.format(parser.dataset, epoch_num))
+		if epoch_num%10 == 0:
+                	torch.save(retinanet.module, 'models/{}_retinanet_{}.pt'.format(parser.dataset, epoch_num))
 
 	retinanet.eval()
 

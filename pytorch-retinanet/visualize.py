@@ -65,6 +65,7 @@ def main(args=None):
         cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
     for idx, data in enumerate(dataloader_val):
+        print(data.keys())
 
         file = data['idx'][0] 
         filename = result_dir + '/' + str(file).zfill(6) + '.txt'
