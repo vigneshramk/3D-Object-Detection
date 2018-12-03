@@ -3,7 +3,7 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
-import os
+import os , cv2
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rc('axes', linewidth=2)
@@ -13,7 +13,11 @@ from data.sunrgbd_loader import SUN_Dataset,SUN_TrainLoader
 import models.globalVariables as glb
 from hyperParams import hyp
 from eval_det import eval_det
-from train.roi_seg_box3d_dataset import compute_box3d_iou
+from train.roi_seg_box3d_dataset import compute_box3d_iou, class2angle
+
+from viz_util import draw_gt_boxes3d
+import mayavi.mlab as mlab
+
 
 os.environ["CUDA_VISIBLE_DEVICES"]= hyp["gpu"]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -69,6 +73,24 @@ class Eval:
         rotmat = np.array([[cosval, -sinval],[sinval, cosval]])
         pc[:,[0,2]] = np.dot(pc[:,[0,2]], np.transpose(rotmat))
         return pc
+
+    def visualize(self, img_id, box2d, ps, segp, box3d, corners_3d_pred, center):
+        img_filename = os.path.join(glb.IMG_DIR, '%06d.jpg'%(img_id))
+        img = cv2.imread(img_filename)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) 
+        cv2.rectangle(img, (int(box2d[0]),int(box2d[1])), (int(box2d[2]),int(box2d[3])), (0,255,0), 3)
+        Image.fromarray(img).show()
+
+        # Draw figures
+        fig = mlab.figure(figure=None, bgcolor=(0.6,0.6,0.6), fgcolor=None, engine=None, size=(1000, 500))
+        mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2, figure=fig)
+        mlab.points3d(ps[:,0], ps[:,1], ps[:,2], segp, mode='point', colormap='gnuplot', scale_factor=1, figure=fig)
+        draw_gt_boxes3d([box3d], fig, color = (0,0,1), draw_text=False)
+        draw_gt_boxes3d([corners_3d_pred], fig, color = (0,1,0), draw_text=False)
+        mlab.points3d(center[0], center[1], center[2], color=(0,1,0), mode='sphere', scale_factor=0.4, figure=fig)
+        mlab.orientation_axes()
+        input()
+
 
     def eval(self, loader, eval_mode=True):
         gt_all = {}

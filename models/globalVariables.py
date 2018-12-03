@@ -26,3 +26,5 @@ mean_size_arr = np.zeros((NUM_SIZE_CLUSTER, 3))
 for i in range(NUM_SIZE_CLUSTER):
     mean_size_arr[i,:] = type_mean_size[class2type[i]]
 mean_size_arr = torch.FloatTensor(mean_size_arr).cuda()
+
+IMG_DIR = '/home/rqi/Data/mysunrgbd/training/image'
