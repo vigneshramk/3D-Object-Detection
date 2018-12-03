@@ -5,8 +5,8 @@ import numpy as np
 # Make a folder data inside the 3D-Object-Detection folder and put the pickle file inside it
 #SUN_PATH = '/home/ubuntu/DL_Project/data'
 SUN_PATH = './../data'
-SUN_TRAIN_FILE = 'sunrgbd_retina_train.pickle'
-SUN_VAL_FILE = 'sunrgbd_retina_val.pickle'
+SUN_TRAIN_FILE = 'sunrgbd_train.pickle'
+SUN_VAL_FILE = 'sunrgbd_val.pickle'
 
 type2class={'bed':0, 'table':1, 'sofa':2, 'chair':3, 'toilet':4, 'desk':5, 'dresser':6, 'night_stand':7, 'bookshelf':8, 'bathtub':9}
 
@@ -59,7 +59,7 @@ def load_data(SUN_PATH, SUN_FILE):
     id_list,box2d_list,box3d_list,input_list,label_list,type_list,heading_list,box3d_size_list,frustum_angle_list = [np.array(elem) for elem in data]
 
     class_list = [type2class[l] for l in type_list]
-    frustum_list = get_frustum(input_list)
+    frustum_list = input_list
 
     return id_list,box2d_list,box3d_list,frustum_list,label_list,type_list,heading_list,box3d_size_list,frustum_angle_list
     # return frustum_list,class_list,label_list,box3d_list
