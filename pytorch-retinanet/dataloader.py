@@ -203,13 +203,17 @@ class CSVDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        print(idx)
 
+        name =  self.image_names[idx].strip('/serverdata/vignesh/3D-Obj/2d_data/training/image/').strip('.jpg')    
+        name = int(name)    
+        print(name)
         img = self.load_image(idx)
         annot = self.load_annotations(idx)
         sample = {'img': img, 'annot': annot}
         if self.transform:
             sample = self.transform(sample)
+
+        sample['idx'] = name
 
         return sample
 
@@ -307,6 +311,7 @@ def collater(data):
     imgs = [s['img'] for s in data]
     annots = [s['annot'] for s in data]
     scales = [s['scale'] for s in data]
+    indices = [s['idx'] for s in data]
         
     widths = [int(s.shape[0]) for s in imgs]
     heights = [int(s.shape[1]) for s in imgs]
@@ -338,7 +343,7 @@ def collater(data):
 
     padded_imgs = padded_imgs.permute(0, 3, 1, 2)
 
-    return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales}
+    return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales, 'idx':indices}
 
 class Resizer(object):
     """Convert ndarrays in sample to Tensors."""
@@ -394,7 +399,7 @@ class Augmenter(object):
             annots[:, 0] = cols - x2
             annots[:, 2] = cols - x_tmp
 
-            sample = {'img': image, 'annot': annots}
+            sample = {'img': image, 'annot': annots, 'idx': sample['idx']}
 
         return sample
 

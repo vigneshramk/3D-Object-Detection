@@ -22,7 +22,7 @@ assert torch.__version__.split('.')[1] == '4'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
 
-result_dir = '/home/kvr/Documents/Projects/3D-Object-Detection/pytorch-retinanet/sun_csv/train_scores'
+result_dir = '/home/vignesh/Projects/3D-Object-Detection/pytorch-retinanet/sun_csv/train_scores'
 
 def main(args=None):
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
@@ -66,7 +66,8 @@ def main(args=None):
 
     for idx, data in enumerate(dataloader_val):
 
-        file = data['idx'][0] 
+        file = data['idx'][0]
+        print(file,'visualize',data['idx']) 
         filename = result_dir + '/' + str(file).zfill(6) + '.txt'
 
         with torch.no_grad():
