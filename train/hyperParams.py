@@ -10,7 +10,7 @@ hyp = {
 "model_fname": "Train_v1",
 "hyp_fname": "Hyp_v1",
 "log_freq": 25,
-"gpu":"5,6,7",
+"gpu":"1",
 "log_dir":"trainVoxel_loss",
 "test_name":"trainVoxelVal_loss",
 "parallel":False
